@@ -1,0 +1,97 @@
+[build-system]
+requires = [
+    "scikit-build-core>=0.8.0",
+    "pybind11>=2.11.0",
+    "cmake>=3.15",
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "sagedb"
+version = "0.1.4"
+description = "High-Performance Vector Database with Pluggable ANNS Architecture"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "IntelliStream Team", email = "shuhao_zhang@hust.edu.cn"}
+]
+keywords = ["vector database", "ANNS", "similarity search", "FAISS", "embedding"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Database",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.19.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov",
+    "black",
+    "isort",
+    "mypy",
+]
+faiss = [
+    "faiss-cpu>=1.7.0",
+]
+publish = [
+    "sage-pypi-publisher==0.1.4"
+]
+
+[project.urls]
+Homepage = "https://github.com/intellistream/sageDB"
+Documentation = "https://github.com/intellistream/sageDB#readme"
+Repository = "https://github.com/intellistream/sageDB"
+Issues = "https://github.com/intellistream/sageDB/issues"
+
+[tool.scikit-build]
+# CMake args
+cmake.args = [
+    "-DBUILD_TESTS=OFF",
+    "-DUSE_OPENMP=ON",
+    "-DENABLE_MULTIMODAL=ON",
+]
+cmake.verbose = true
+# Build directory
+build-dir = "build/{wheel_tag}"
+# Install directory - the Python module will be installed here
+wheel.install-dir = "sagedb"
+wheel.packages = ["sagedb"]
+# Platform tags
+wheel.py-api = "cp311"
+# Set manylinux tag
+wheel.expand-macos-universal-tags = false
+
+[tool.cibuildwheel]
+build = ["cp38-*", "cp39-*", "cp310-*", "cp311-*", "cp312-*"]
+skip = ["*-musllinux*", "*-win32", "*-manylinux_i686"]
+
+[tool.cibuildwheel.linux]
+before-all = [
+    "yum install -y openblas-devel lapack-devel || apt-get update && apt-get install -y libopenblas-dev liblapack-dev"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+
+[tool.isort]
+profile = "black"
+line_length = 100

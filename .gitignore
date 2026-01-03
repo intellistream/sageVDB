@@ -17,4 +17,5 @@ __pycache__/
 
 # Specific compiled files
 python/_sage_db.cpython-*-linux-gnu.so
-
+dist/*
+wheelhouse/*
