@@ -8,7 +8,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "sagedb"
-version = "0.1.2"
+version = "0.1.3"
 description = "High-Performance Vector Database with Pluggable ANNS Architecture"
 readme = "README.md"
 license = {text = "MIT"}
