@@ -48,7 +48,7 @@ faiss = [
     "faiss-cpu>=1.7.0",
 ]
 publish = [
-    "sage-pypi-publisher==0.1.2",
+    "sage-pypi-publisher==0.1.3",
 ]
 
 [project.urls]
