@@ -8,7 +8,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "sagedb"
-version = "0.1.0"
+version = "0.1.1"
 description = "High-Performance Vector Database with Pluggable ANNS Architecture"
 readme = "README.md"
 license = {text = "MIT"}
@@ -46,6 +46,9 @@ dev = [
 ]
 faiss = [
     "faiss-cpu>=1.7.0",
+]
+publish = [
+    "sage-pypi-publisher==0.1.1",
 ]
 
 [project.urls]
