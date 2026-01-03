@@ -161,3 +161,34 @@ As sageDB matures, consider:
 - Publishing to **other language package managers** (if bindings added)
 
 All while maintaining the embedded component for SAGE's internal use.
+
+---
+
+## ✅ CORRECT: PyPI Dependency Model (Current)
+
+**As of 2026-01-04**, sageDB follows standard Python packaging:
+
+```toml
+# In SAGE's sage-middleware/pyproject.toml
+dependencies = [
+    "sagedb>=0.1.0,<0.2.0",
+    ...
+]
+```
+
+```python
+# In SAGE code
+from sagedb import SageDB, DatabaseConfig
+```
+
+**No more:**
+- ❌ Copying sageDB source into SAGE repo
+- ❌ Building C++ extensions within SAGE
+- ❌ Manual version synchronization
+- ❌ Code duplication
+
+**Workflow:**
+1. Develop sageDB independently
+2. Release to PyPI when ready
+3. SAGE updates dependency version
+4. Users get new features via `pip install --upgrade sagedb`
