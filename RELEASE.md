@@ -33,7 +33,7 @@ rm -rf dist/
 python -m build --sdist
 
 # Upload to PyPI
-python -m twine upload dist/sagedb-0.1.1.tar.gz
+python -m twine upload dist/isage_vdb-0.1.1.tar.gz
 ```
 
 ## Version Numbering

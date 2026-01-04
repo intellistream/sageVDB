@@ -120,7 +120,7 @@ git commit -am "Update sage-vdb to 0.1.1"
 
 1. **External Researcher** wants to benchmark ANNS algorithms:
    ```bash
-   pip install sagedb  # Quick setup
+   pip install isage-vdb  # Quick setup
    ```
 
 2. **SAGE Developer** adding multimodal fusion:
@@ -131,7 +131,7 @@ git commit -am "Update sage-vdb to 0.1.1"
 
 3. **Tutorial Author** writing sageDB examples:
    ```bash
-   pip install sagedb  # Readers can easily reproduce
+   pip install isage-vdb  # Readers can easily reproduce
    ```
 
 ---
