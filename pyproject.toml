@@ -52,10 +52,10 @@ publish = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/intellistream/sageDB"
-Documentation = "https://github.com/intellistream/sageDB#readme"
-Repository = "https://github.com/intellistream/sageDB"
-Issues = "https://github.com/intellistream/sageDB/issues"
+Homepage = "https://github.com/intellistream/sageVDB"
+Documentation = "https://github.com/intellistream/sageVDB#readme"
+Repository = "https://github.com/intellistream/sageVDB"
+Issues = "https://github.com/intellistream/sageVDB/issues"
 
 [tool.scikit-build]
 # CMake args

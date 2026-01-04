@@ -19,3 +19,4 @@ __pycache__/
 python/_sage_db.cpython-*-linux-gnu.so
 dist/*
 wheelhouse/*
+.env

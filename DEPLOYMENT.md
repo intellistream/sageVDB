@@ -24,7 +24,7 @@ sage-vdb supports **two deployment modes** that serve different use cases:
 **Update process:**
 ```bash
 # In sageDB repo - push changes
-cd ~/sageDB
+cd ~/sageVDB
 git push origin main
 
 # In SAGE repo - update submodule or copy files
@@ -94,7 +94,7 @@ Both deployment modes should maintain **the same version number** for consistenc
 **To update versions:**
 ```bash
 # 1. Update sageDB standalone
-cd ~/sageDB
+cd ~/sageVDB
 vim __init__.py  # Change version
 git commit -am "Bump to 0.1.1"
 git push  # Pre-push hook uploads to PyPI
