@@ -22,18 +22,18 @@ else()
 endif()
 
 # Create Python bindings module
-pybind11_add_module(_sage_db bindings.cpp)
+pybind11_add_module(_sagevdb bindings.cpp)
 
-# Link against SAGE DB library
-target_link_libraries(_sage_db PRIVATE sage_db)
+# Link against SAGE VDB library
+target_link_libraries(_sagevdb PRIVATE sage_db)
 
 # Include directories
-target_include_directories(_sage_db PRIVATE
+target_include_directories(_sagevdb PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
 # Set module properties
-set_target_properties(_sage_db PROPERTIES
+set_target_properties(_sagevdb PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
     PREFIX "${PYTHON_MODULE_PREFIX}"
@@ -65,16 +65,16 @@ if(DEFINED SKBUILD)
         )
     else()
         # Wheel build: install to wheel platlib
-        set(_install_dest "${SKBUILD_PLATLIB_DIR}/sage/middleware/components/sage_db/python")
+        set(_install_dest "${SKBUILD_PLATLIB_DIR}/sagevdb")
     endif()
     
-    install(TARGETS _sage_db
+    install(TARGETS _sagevdb
         LIBRARY DESTINATION ${_install_dest}
         COMPONENT python
     )
 else()
     # Standalone C++ project build
-    install(TARGETS _sage_db
+    install(TARGETS _sagevdb
         LIBRARY DESTINATION python
         COMPONENT python
     )

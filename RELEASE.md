@@ -71,7 +71,7 @@ password = <your-pypi-token>
 python -m build --sdist
 
 # Test installation
-pip install dist/sagedb-0.1.1.tar.gz
+pip install dist/isage_vdb-0.1.1.tar.gz
 
 # Run tests
 pytest tests/
@@ -80,9 +80,9 @@ pytest tests/
 ## View Published Package
 
 After upload, visit:
-https://pypi.org/project/sagedb/
+https://pypi.org/project/isage-vdb/
 
 Install with:
 ```bash
-pip install sagedb
+pip install isage-vdb
 ```

@@ -1,8 +1,8 @@
-# SageDB C++ Core Library
+# SageVDB C++ Core Library
 
 **High-Performance Vector Database with Pluggable ANNS Architecture**
 
-SageDB is a C++20 library that provides efficient vector similarity search, metadata management, and a flexible plugin system for Approximate Nearest Neighbor Search (ANNS) algorithms. It serves as the native core for the SAGE DB middleware component.
+SageVDB is a C++20 library that provides efficient vector similarity search, metadata management, and a flexible plugin system for Approximate Nearest Neighbor Search (ANNS) algorithms. It serves as the native core for the SAGE VDB middleware component.
 
 > Usage Mode Guide: Please refer to `docs/USAGE_MODES.md` (for the positioning, data flow, and examples of Standalone / BYO-Embedding / Plugin / Service).
 
@@ -48,7 +48,7 @@ SageDB is a C++20 library that provides efficient vector similarity search, meta
 ### Building
 
 ```bash
-cd sageDB
+cd sageVDB
 
 # Basic build
 ./build.sh

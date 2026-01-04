@@ -7,8 +7,8 @@ requires = [
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "sagedb"
-version = "0.1.4"
+name = "isage-vdb"
+version = "0.1.5"
 description = "High-Performance Vector Database with Pluggable ANNS Architecture"
 readme = "README.md"
 license = {text = "MIT"}
@@ -63,13 +63,14 @@ cmake.args = [
     "-DBUILD_TESTS=OFF",
     "-DUSE_OPENMP=ON",
     "-DENABLE_MULTIMODAL=ON",
+    "-DBUILD_PYTHON_BINDINGS=ON",
 ]
 cmake.verbose = true
 # Build directory
 build-dir = "build/{wheel_tag}"
 # Install directory - the Python module will be installed here
-wheel.install-dir = "sagedb"
-wheel.packages = ["sagedb"]
+wheel.install-dir = "sagevdb"
+wheel.packages = ["sagevdb"]
 # Platform tags
 wheel.py-api = "cp311"
 # Set manylinux tag

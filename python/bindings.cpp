@@ -7,7 +7,7 @@
 namespace py = pybind11;
 using namespace sage_db;
 
-PYBIND11_MODULE(_sage_db, m) {
+PYBIND11_MODULE(_sagevdb, m) {
     m.doc() = "SAGE Database - High-performance vector database with FAISS backend";
 
     // Exceptions
