@@ -30,3 +30,7 @@ These guardrails keep completions consistent with the repo goal: FAISS-style API
 ## Documentation Expectations
 - Update `README.md` for core vector/ANNS changes; use `README_Multimodal.md` and `docs/USAGE_MODES.md` when changing multimodal flows.
 - Keep option names and examples FAISS-compatible to ease user migration.
+
+## Publishing
+- Use the latest `isage-pypi-publisher` (CLI `sage-pypi-publisher`) from the `sage` conda env for releases.
+- For manylinux wheels: `sage-pypi-publisher build-manylinux` then `sage-pypi-publisher upload wheelhouse/*.whl` (PyPI token in `~/.pypirc`).

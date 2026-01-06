@@ -952,3 +952,12 @@ This project is part of the SAGE system. See the [LICENSE](../../../../../LICENS
 ---
 
 **Part of the SAGE Project** - [Documentation](../../../../../README.md) | [Issues](https://github.com/intellistream/SAGE/issues)
+
+
+## Component Versions
+
+<!-- START_VERSION_TABLE -->
+| Component | Status | Latest Version |
+|-----------|--------|----------------|
+| [isage-vdb](https://pypi.org/project/isage-vdb/) | [![PyPI](https://img.shields.io/pypi/v/isage-vdb)](https://pypi.org/project/isage-vdb/) | `0.1.5` |
+<!-- END_VERSION_TABLE -->
