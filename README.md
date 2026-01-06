@@ -924,7 +924,7 @@ target_link_libraries(my_app ${SAGE_DB_LIB})
 
 - **[ANNS Plugin Guide](../docs/anns_plugin_guide.md)** - Detailed plugin development
 - **[Multimodal Design](../docs/multimodal_fusion_design.md)** - Architecture overview
-- **[Multimodal Features](README_Multimodal.md)** - Multimodal usage guide
+- **[Multimodal Features](docs/guides/README_Multimodal.md)** - Multimodal usage guide
 - **[Parent README](../README.md)** - SAGE DB middleware documentation
 
 ## 🤝 Contributing

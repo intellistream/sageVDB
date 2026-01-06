@@ -30,7 +30,7 @@ This agent assists with developing, testing, and maintaining the sageDB C++ vect
 - Keep new ANNS algorithms under src/anns with public headers in include/sage_db/anns; register factories in .cpp files only
 - Maintain FAISS-compatible knobs (k/nprobe/index type/metric) and thread params through `DatabaseConfig` and `SearchParams` instead of ad-hoc globals
 - Preserve thread-safety in VectorStore (shared_mutex) and follow existing exception style (`SageDBException`, runtime_error for unsupported ops)
-- Update docs: core changes → README.md; multimodal → README_Multimodal.md, docs/USAGE_MODES.md
+- Update docs: core changes → README.md; multimodal → docs/guides/README_Multimodal.md, docs/USAGE_MODES.md
 
 ## Validation Checklist
 - Build succeeds without FAISS; optional FAISS path guarded by ENABLE_FAISS

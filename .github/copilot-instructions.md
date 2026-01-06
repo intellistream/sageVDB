@@ -28,7 +28,7 @@ These guardrails keep completions consistent with the repo goal: FAISS-style API
 - When adding params, thread them through `DatabaseConfig` -> `VectorStore` -> bindings; keep defaults backward compatible.
 
 ## Documentation Expectations
-- Update `README.md` for core vector/ANNS changes; use `README_Multimodal.md` and `docs/USAGE_MODES.md` when changing multimodal flows.
+- Update `README.md` for core vector/ANNS changes; use `docs/guides/README_Multimodal.md` and `docs/USAGE_MODES.md` when changing multimodal flows.
 - Keep option names and examples FAISS-compatible to ease user migration.
 
 ## Publishing
