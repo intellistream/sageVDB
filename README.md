@@ -1,8 +1,8 @@
-# SageDB C++ Core Library
+# SageVDB C++ Core Library
 
 **High-Performance Vector Database with Pluggable ANNS Architecture**
 
-SageDB is a C++20 library that provides efficient vector similarity search, metadata management, and a flexible plugin system for Approximate Nearest Neighbor Search (ANNS) algorithms. It serves as the native core for the SAGE DB middleware component.
+SageVDB is a C++20 library that provides efficient vector similarity search, metadata management, and a flexible plugin system for Approximate Nearest Neighbor Search (ANNS) algorithms. It serves as the native core for the SAGE VDB middleware component.
 
 > Usage Mode Guide: Please refer to `docs/USAGE_MODES.md` (for the positioning, data flow, and examples of Standalone / BYO-Embedding / Plugin / Service).
 
@@ -48,7 +48,7 @@ SageDB is a C++20 library that provides efficient vector similarity search, meta
 ### Building
 
 ```bash
-cd sageDB
+cd sageVDB
 
 # Basic build
 ./build.sh
@@ -924,7 +924,7 @@ target_link_libraries(my_app ${SAGE_DB_LIB})
 
 - **[ANNS Plugin Guide](../docs/anns_plugin_guide.md)** - Detailed plugin development
 - **[Multimodal Design](../docs/multimodal_fusion_design.md)** - Architecture overview
-- **[Multimodal Features](README_Multimodal.md)** - Multimodal usage guide
+- **[Multimodal Features](docs/guides/README_Multimodal.md)** - Multimodal usage guide
 - **[Parent README](../README.md)** - SAGE DB middleware documentation
 
 ## 🤝 Contributing
@@ -952,3 +952,12 @@ This project is part of the SAGE system. See the [LICENSE](../../../../../LICENS
 ---
 
 **Part of the SAGE Project** - [Documentation](../../../../../README.md) | [Issues](https://github.com/intellistream/SAGE/issues)
+
+
+## Component Versions
+
+<!-- START_VERSION_TABLE -->
+| Component | Status | Latest Version |
+|-----------|--------|----------------|
+| [isage-vdb](https://pypi.org/project/isage-vdb/) | [![PyPI](https://img.shields.io/pypi/v/isage-vdb)](https://pypi.org/project/isage-vdb/) | `0.1.5` |
+<!-- END_VERSION_TABLE -->

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(sage_db VERSION 1.0.0 LANGUAGES CXX)
+project(sage_vdb VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -433,7 +433,7 @@ if(DEFINED SKBUILD)
         endif()
     else()
         # Wheel build: install to wheel platlib (same directory as Python extension)
-        set(_lib_install_dest "${SKBUILD_PLATLIB_DIR}/sage/middleware/components/sage_db/python")
+        set(_lib_install_dest "${SKBUILD_PLATLIB_DIR}/sagevdb")
         message(STATUS "sageDB: Wheel build, lib -> ${_lib_install_dest}")
     endif()
     

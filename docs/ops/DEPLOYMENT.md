@@ -1,8 +1,8 @@
-# sageDB Deployment Strategies
+# sage-vdb Deployment Strategies
 
 ## Overview
 
-sageDB supports **two deployment modes** that serve different use cases:
+sage-vdb supports **two deployment modes** that serve different use cases:
 
 ### 1. Embedded C++ Component (SAGE Framework)
 **Used by:** SAGE middleware internal components
@@ -24,7 +24,7 @@ sageDB supports **two deployment modes** that serve different use cases:
 **Update process:**
 ```bash
 # In sageDB repo - push changes
-cd ~/sageDB
+cd ~/sageVDB
 git push origin main
 
 # In SAGE repo - update submodule or copy files
@@ -37,13 +37,13 @@ cd ~/SAGE/packages/sage-middleware/src/sage/middleware/components/sage_db/
 ### 2. PyPI Package (Standalone Use)
 **Used by:** External projects, quick prototyping, independent tools
 
-**Installation:** `pip install sagedb`
+**Installation:** `pip install isage-vdb`
 
 **How it works:**
 - Source distribution uploaded to PyPI
 - Users compile from source during `pip install`
 - C++ code built automatically via scikit-build-core
-- Imported as: `import sagedb` or `from sagedb import SageDB`
+- Imported as: `import sagevdb` or `from sagevdb import SageDB`
 
 **Advantages:**
 - ✅ Easy installation for external users
@@ -73,11 +73,11 @@ git push origin main  # Hook asks to upload to PyPI
 - Building SAGE from source anyway
 
 ### Use PyPI Package When:
-- Using sageDB in a standalone Python project
+- Using sage-vdb in a standalone Python project
 - Quick prototyping without SAGE framework
 - Teaching/demo scenarios
 - Contributing example scripts or tutorials
-- Other projects depend on sageDB functionality
+- Other projects depend on sage-vdb functionality
 
 ---
 
@@ -87,14 +87,14 @@ Both deployment modes should maintain **the same version number** for consistenc
 
 | Location | File | Current Version |
 |----------|------|----------------|
-| PyPI Package | `sageDB/__init__.py` | 0.1.0 |
+| PyPI Package | `sageVDB/__init__.py` | 0.1.0 |
 | SAGE Component | `sage/middleware/components/sage_db/__init__.py` | 0.1.0 |
 | SAGE Component | `sage/middleware/components/sage_db/python/__init__.py` | 0.1.0 |
 
 **To update versions:**
 ```bash
 # 1. Update sageDB standalone
-cd ~/sageDB
+cd ~/sageVDB
 vim __init__.py  # Change version
 git commit -am "Bump to 0.1.1"
 git push  # Pre-push hook uploads to PyPI
@@ -104,7 +104,7 @@ cd ~/SAGE
 sed -i 's/__version__ = "0.1.0"/__version__ = "0.1.1"/g' \
   packages/sage-middleware/src/sage/middleware/components/sage_db/__init__.py \
   packages/sage-middleware/src/sage/middleware/components/sage_db/python/__init__.py
-git commit -am "Update sageDB to 0.1.1"
+git commit -am "Update sage-vdb to 0.1.1"
 ```
 
 ---
@@ -112,7 +112,7 @@ git commit -am "Update sageDB to 0.1.1"
 ## Why Both?
 
 **No Conflict:** These are complementary, not competing:
-- PyPI package enables **ecosystem growth** (external tools can depend on sageDB)
+- PyPI package enables **ecosystem growth** (external tools can depend on sage-vdb)
 - Embedded component ensures **SAGE independence** (no external dependency for core features)
 - Users choose based on their use case
 
@@ -120,7 +120,7 @@ git commit -am "Update sageDB to 0.1.1"
 
 1. **External Researcher** wants to benchmark ANNS algorithms:
    ```bash
-   pip install sagedb  # Quick setup
+   pip install isage-vdb  # Quick setup
    ```
 
 2. **SAGE Developer** adding multimodal fusion:
@@ -131,7 +131,7 @@ git commit -am "Update sageDB to 0.1.1"
 
 3. **Tutorial Author** writing sageDB examples:
    ```bash
-   pip install sagedb  # Readers can easily reproduce
+   pip install isage-vdb  # Readers can easily reproduce
    ```
 
 ---
@@ -144,7 +144,7 @@ git commit -am "Update sageDB to 0.1.1"
 
 ### Import Paths
 - **Embedded:** `sage.middleware.components.sage_db.*`
-- **PyPI:** `sagedb.*`
+- **PyPI:** `sagevdb.*`
 
 ### Dependencies
 - **Embedded:** Inherits from SAGE's dependency tree
