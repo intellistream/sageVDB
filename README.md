@@ -45,7 +45,26 @@ SageVDB is a C++20 library that provides efficient vector similarity search, met
 
 ## 🚀 Quick Start
 
-### Building
+### One-Command Setup (Recommended)
+
+```bash
+# Clone and setup in one go
+git clone https://github.com/intellistream/sageVDB.git
+cd sageVDB
+./quickstart.sh
+```
+
+The `quickstart.sh` script will:
+- ✓ Install git hooks (pre-commit, pre-push)
+- ✓ Check dependencies (CMake, C++ compiler, Python)
+- ✓ Optionally build the project
+- ✓ Optionally install Python package in development mode
+
+**What the git hooks do**:
+- `pre-commit`: Checks for trailing whitespace, large files, debug statements
+- `pre-push`: Manages version updates and PyPI publishing workflow
+
+### Manual Building
 
 ```bash
 cd sageVDB
