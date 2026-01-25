@@ -12,9 +12,12 @@ CYAN='\033[0;36m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-PACKAGE_NAME="isage-vdb"
+PACKAGE_NAME=$(grep -oP '^name = "\K[^"]+' pyproject.toml 2>/dev/null || echo "unknown")
 
 check_pypi_version_exists() {
+    if [ "$PACKAGE_NAME" = "unknown" ]; then
+        return 2
+    fi
     if command -v python3 &> /dev/null; then
         python3 - "$PACKAGE_NAME" "$CURRENT_VERSION" <<'PY'
 import json
@@ -101,7 +104,11 @@ if [ "$VERSION_UPDATED" = true ]; then
             exit 1
         fi
     elif [ "$PYPI_CHECK_RESULT" -eq 2 ]; then
-        echo -e "${YELLOW}⚠ Unable to check PyPI for existing version (missing python3/curl or network issue)${NC}"
+        if [ "$PACKAGE_NAME" = "unknown" ]; then
+            echo -e "${YELLOW}⚠ Unable to check PyPI (missing package name in pyproject.toml)${NC}"
+        else
+            echo -e "${YELLOW}⚠ Unable to check PyPI for existing version (missing python3/curl or network issue)${NC}"
+        fi
     fi
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${BLUE}📦 Build and upload version ${CURRENT_VERSION} to PyPI?${NC}"
