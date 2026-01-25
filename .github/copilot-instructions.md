@@ -32,5 +32,32 @@ These guardrails keep completions consistent with the repo goal: FAISS-style API
 - Keep option names and examples FAISS-compatible to ease user migration.
 
 ## Publishing
-- Use the latest `isage-pypi-publisher` (CLI `sage-pypi-publisher`) from the `sage` conda env for releases.
-- For manylinux wheels: `sage-pypi-publisher build-manylinux` then `sage-pypi-publisher upload wheelhouse/*.whl` (PyPI token in `~/.pypirc`).
+
+**⚠️ IMPORTANT: Publishing requires explicit version update and manual action**
+
+### Publishing Workflow
+1. **Update version** in `pyproject.toml` (current: 0.1.5)
+   - Bug fixes: increment patch (0.1.5 → 0.1.6)
+   - New features: increment minor (0.1.5 → 0.2.0)
+   - Breaking changes: increment major (0.1.5 → 1.0.0)
+
+2. **Build and publish** using `sage-pypi-publisher`:
+   ```bash
+   # Option 1: Automated (recommended)
+   sage-pypi-publisher publish  # Interactive: asks for version update and PyPI upload
+   
+   # Option 2: Manual steps
+   sage-pypi-publisher build-manylinux     # Build wheels
+   sage-pypi-publisher upload wheelhouse/*.whl  # Upload to PyPI
+   ```
+
+3. **Git hook behavior**: The pre-push hook will:
+   - Warn if version wasn't updated
+   - Ask [u/y/n]: update now / continue / cancel
+   - Choosing 'y' pushes to GitHub but does NOT publish to PyPI
+
+### Notes
+- Use latest `isage-pypi-publisher` from `sage` conda env
+- PyPI token must be in `~/.pypirc`
+- Push to GitHub and publish to PyPI are separate steps
+- See `docs/ops/RELEASE.md` and `docs/ops/DEPLOYMENT.md` for details
