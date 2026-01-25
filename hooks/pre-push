@@ -16,7 +16,7 @@ PACKAGE_NAME="isage-vdb"
 
 check_pypi_version_exists() {
     if command -v python3 &> /dev/null; then
-        python3 - <<'PY'
+        python3 - "$PACKAGE_NAME" "$CURRENT_VERSION" <<'PY'
 import json
 import sys
 import urllib.request
@@ -61,9 +61,6 @@ done
 
 if [ "$VERSION_UPDATED" = true ]; then
     echo -e "${GREEN}✓ Version updated to ${CURRENT_VERSION}${NC}"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BLUE}📦 Build and upload version ${CURRENT_VERSION} to PyPI?${NC}"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     PYPI_CHECK_RESULT=0
     check_pypi_version_exists
     PYPI_CHECK_RESULT=$?
@@ -106,6 +103,9 @@ if [ "$VERSION_UPDATED" = true ]; then
     elif [ "$PYPI_CHECK_RESULT" -eq 2 ]; then
         echo -e "${YELLOW}⚠ Unable to check PyPI for existing version (missing python3/curl or network issue)${NC}"
     fi
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}📦 Build and upload version ${CURRENT_VERSION} to PyPI?${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "  ${GREEN}[y]${NC} Yes, build and upload to PyPI"
     echo -e "  ${YELLOW}[n]${NC} No, just push to GitHub"
     echo -e "  ${RED}[c]${NC} Cancel push"
