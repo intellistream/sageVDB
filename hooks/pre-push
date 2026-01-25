@@ -12,6 +12,34 @@ CYAN='\033[0;36m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+PACKAGE_NAME="isage-vdb"
+
+check_pypi_version_exists() {
+    if command -v python3 &> /dev/null; then
+        python3 - <<'PY'
+import json
+import sys
+import urllib.request
+
+package = sys.argv[1]
+version = sys.argv[2]
+try:
+    with urllib.request.urlopen(f"https://pypi.org/pypi/{package}/json", timeout=5) as resp:
+        data = json.load(resp)
+    releases = data.get("releases", {})
+    sys.exit(0 if version in releases else 1)
+except Exception:
+    sys.exit(2)
+PY
+        return $?
+    elif command -v curl &> /dev/null; then
+        curl -fsSL "https://pypi.org/pypi/${PACKAGE_NAME}/json" | grep -q "\"${CURRENT_VERSION}\""
+        return $?
+    else
+        return 2
+    fi
+}
+
 CURRENT_VERSION=$(grep -oP '^version = "\K[^"]+' pyproject.toml 2>/dev/null || echo "unknown")
 if [ "$CURRENT_VERSION" = "unknown" ]; then
     echo -e "${YELLOW}No pyproject.toml found, skipping version check${NC}"
@@ -36,6 +64,48 @@ if [ "$VERSION_UPDATED" = true ]; then
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${BLUE}📦 Build and upload version ${CURRENT_VERSION} to PyPI?${NC}"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    PYPI_CHECK_RESULT=0
+    check_pypi_version_exists
+    PYPI_CHECK_RESULT=$?
+    if [ "$PYPI_CHECK_RESULT" -eq 0 ]; then
+        echo -e "${YELLOW}⚠ ${PACKAGE_NAME} ${CURRENT_VERSION} already exists on PyPI${NC}"
+        echo -e "${BLUE}What would you like to do?${NC}"
+        echo -e "  ${GREEN}[u]${NC} Update version now (interactive)"
+        echo -e "  ${YELLOW}[y]${NC} Continue anyway"
+        echo -e "  ${RED}[c]${NC} Cancel push"
+        echo -n "Your choice [u/y/c]: "
+        read -r pypi_resp </dev/tty
+
+        if [[ "$pypi_resp" =~ ^[Uu]$ ]]; then
+            echo ""
+            echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+            echo -e "${BLUE}📝 Version Update${NC}"
+            echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+            echo -e "${YELLOW}Current: ${BLUE}${CURRENT_VERSION}${NC}"
+            echo ""
+            echo -e "${GREEN}Enter new version (e.g., 0.1.7, 1.0.0):${NC}"
+            echo -n "New version: "
+            read -r new_version </dev/tty
+
+            if [[ ! "$new_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9._-]+)?$ ]]; then
+                echo -e "${RED}✗ Invalid format. Expected: X.Y.Z${NC}"
+                exit 1
+            fi
+
+            old_version="$CURRENT_VERSION"
+            sed -i "s/version = \"${CURRENT_VERSION}\"/version = \"${new_version}\"/" pyproject.toml
+            git add pyproject.toml
+            git commit -m "chore: bump version to ${new_version}"
+            CURRENT_VERSION="$new_version"
+            echo ""
+            echo -e "${GREEN}✓ ${BLUE}${old_version}${GREEN} → ${BLUE}${new_version}${NC}"
+        elif [[ "$pypi_resp" =~ ^[Cc]$ ]]; then
+            echo -e "${YELLOW}Push cancelled${NC}"
+            exit 1
+        fi
+    elif [ "$PYPI_CHECK_RESULT" -eq 2 ]; then
+        echo -e "${YELLOW}⚠ Unable to check PyPI for existing version (missing python3/curl or network issue)${NC}"
+    fi
     echo -e "  ${GREEN}[y]${NC} Yes, build and upload to PyPI"
     echo -e "  ${YELLOW}[n]${NC} No, just push to GitHub"
     echo -e "  ${RED}[c]${NC} Cancel push"
