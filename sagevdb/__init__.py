@@ -17,6 +17,16 @@ except PackageNotFoundError:
 __author__ = "IntelliStream Team"
 __email__ = "shuhao_zhang@hust.edu.cn"
 
+# Help locate libsage_vdb.so for development mode
+import os
+import sys
+_pkg_dir = os.path.dirname(os.path.abspath(__file__))
+if os.path.exists(os.path.join(_pkg_dir, "libsage_vdb.so")):
+    # Development mode: add package directory to library search path
+    if sys.platform == "linux" or sys.platform == "linux2":
+        import ctypes
+        ctypes.CDLL(os.path.join(_pkg_dir, "libsage_vdb.so"), mode=ctypes.RTLD_GLOBAL)
+
 # Import the C++ extension module and expose all public classes
 try:
     from ._sagevdb import (
