@@ -1,15 +1,15 @@
-#include "sage_db/query_engine.h"
+#include "sage_vdb/query_engine.h"
 #include <chrono>
 #include <algorithm>
 #include <set>
 
-namespace sage_db {
+namespace sage_vdb {
 
 QueryEngine::QueryEngine(std::shared_ptr<VectorStore> vector_store,
                         std::shared_ptr<MetadataStore> metadata_store)
     : vector_store_(vector_store), metadata_store_(metadata_store) {
     if (!vector_store_ || !metadata_store_) {
-        throw SageDBException("Vector store and metadata store cannot be null");
+        throw SageVDBException("Vector store and metadata store cannot be null");
     }
 }
 
@@ -333,4 +333,4 @@ void QueryEngine::update_stats(const SearchStats& stats) const {
     last_stats_ = stats;
 }
 
-} // namespace sage_db
+} // namespace sage_vdb

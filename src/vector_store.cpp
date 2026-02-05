@@ -1,8 +1,8 @@
-#include "sage_db/vector_store.h"
-#include "sage_db/anns/anns_interface.h"
-#include "sage_db/anns/brute_force_plugin.h"
+#include "sage_vdb/vector_store.h"
+#include "sage_vdb/anns/anns_interface.h"
+#include "sage_vdb/anns/brute_force_plugin.h"
 #ifdef ENABLE_FAISS
-#include "sage_db/anns/faiss_plugin.h"
+#include "sage_vdb/anns/faiss_plugin.h"
 #endif
 
 #include <algorithm>
@@ -14,7 +14,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-namespace sage_db {
+namespace sage_vdb {
 namespace {
 constexpr uint32_t kVectorStoreFormatVersion = 1;
 }
@@ -173,7 +173,7 @@ public:
     void save(const std::string& filepath) const {
         std::ofstream out(filepath, std::ios::binary);
         if (!out.is_open()) {
-            throw SageDBException("Failed to open file for saving vector store: " + filepath);
+            throw SageVDBException("Failed to open file for saving vector store: " + filepath);
         }
 
         uint32_t version = kVectorStoreFormatVersion;
@@ -210,13 +210,13 @@ public:
     void load(const std::string& filepath) {
         std::ifstream in(filepath, std::ios::binary);
         if (!in.is_open()) {
-            throw SageDBException("Failed to open file for loading vector store: " + filepath);
+            throw SageVDBException("Failed to open file for loading vector store: " + filepath);
         }
 
         uint32_t version = 0;
         in.read(reinterpret_cast<char*>(&version), sizeof(version));
         if (version != kVectorStoreFormatVersion) {
-            throw SageDBException("Unsupported vector store format version");
+            throw SageVDBException("Unsupported vector store format version");
         }
 
         uint32_t name_length = 0;
@@ -297,7 +297,7 @@ private:
 
         const auto* factory = registry.get_factory(algorithm_name_);
         if (!factory) {
-            throw SageDBException("Failed to locate ANNS factory for algorithm: " + algorithm_name_);
+            throw SageVDBException("Failed to locate ANNS factory for algorithm: " + algorithm_name_);
         }
 
         base_build_params_ = factory->default_build_params();
@@ -461,10 +461,10 @@ void VectorStore::load(const std::string& filepath) {
 
 void VectorStore::validate_vector(const Vector& vector) const {
     if (config_.dimension == 0) {
-        throw SageDBException("Database dimension is not configured");
+        throw SageVDBException("Database dimension is not configured");
     }
     if (vector.size() != config_.dimension) {
-        throw SageDBException("Vector dimension mismatch: expected " +
+        throw SageVDBException("Vector dimension mismatch: expected " +
                              std::to_string(config_.dimension) +
                              ", got " + std::to_string(vector.size()));
     }
@@ -472,8 +472,8 @@ void VectorStore::validate_vector(const Vector& vector) const {
 
 void VectorStore::ensure_trained() const {
     if (!is_trained()) {
-        throw SageDBException("Index is not trained. Call build_index() first.");
+        throw SageVDBException("Index is not trained. Call build_index() first.");
     }
 }
 
-} // namespace sage_db
+} // namespace sage_vdb

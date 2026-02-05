@@ -1,9 +1,9 @@
 #!/bin/bash
-# Script to build manylinux wheel for sageDB
+# Script to build manylinux wheel for SageVDB
 
 set -e
 
-echo "🔧 Building sageDB with manylinux tags..."
+echo "🔧 Building SageVDB with manylinux tags..."
 
 # Clean previous builds
 rm -rf dist/ wheelhouse/

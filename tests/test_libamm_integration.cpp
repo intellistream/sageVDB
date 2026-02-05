@@ -1,11 +1,11 @@
-#include "sage_db/sage_db.h"
-#include "sage_db/anns/flat_gpu_plugin.h"
+#include "sage_vdb/sage_vdb.h"
+#include "sage_vdb/anns/flat_gpu_plugin.h"
 #include <iostream>
 #include <random>
 #include <cassert>
 #include <cmath>
 
-using namespace sage_db;
+using namespace sage_vdb;
 
 // Test that LibAMM CRS/SMP-PCA algorithms are available and functional
 void test_libamm_flatgpu_plugin() {

@@ -1,7 +1,7 @@
-#include "sage_db/anns/anns_interface.h"
+#include "sage_vdb/anns/anns_interface.h"
 #include <stdexcept>
 
-namespace sage_db {
+namespace sage_vdb {
 namespace anns {
 
 // ANNSRegistry implementation
@@ -101,4 +101,4 @@ std::vector<std::string> ANNSRegistry::algorithms_supporting_deletions() const {
 }
 
 } // namespace anns
-} // namespace sage_db
+} // namespace sage_vdb

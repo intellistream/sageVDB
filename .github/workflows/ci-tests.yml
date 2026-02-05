@@ -1,4 +1,4 @@
-name: CMake - Build and Test SAGE DB
+name: CMake - Build and Test SageVDB
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       # Limit CI log level to avoid excessive DEBUG logs
-      SAGE_DB_LOG_LEVEL: info
+      sage_vdb_LOG_LEVEL: info
     strategy:
       fail-fast: false
       matrix:
@@ -116,9 +116,9 @@ jobs:
         run: |
           echo "Running tests directly..."
           cd build
-          if [ -f ./test_sage_db ]; then
-            echo "Running test_sage_db..."
-            LD_LIBRARY_PATH=$PWD:$CONDA_PREFIX/lib ./test_sage_db || true
+          if [ -f ./test_sage_vdb ]; then
+            echo "Running test_sage_vdb..."
+            LD_LIBRARY_PATH=$PWD:$CONDA_PREFIX/lib ./test_sage_vdb || true
           fi
           if [ -f ./test_multimodal ]; then
             echo "Running test_multimodal..."
@@ -134,7 +134,7 @@ jobs:
             build/Testing/**
             build/*.log
             build/**/compile_commands.json
-            build/test_sage_db
+            build/test_sage_vdb
             build/test_multimodal
 
       - name: Upload built library
@@ -143,5 +143,5 @@ jobs:
         with:
           name: sage-db-library-${{ matrix.os }}-${{ matrix.build_type }}
           path: |
-            build/libsage_db.so
-            build/_sage_db*.so
+            build/libsage_vdb.so
+            build/_sage_vdb*.so

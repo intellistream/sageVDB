@@ -1,11 +1,11 @@
-#include "sage_db/metadata_store.h"
+#include "sage_vdb/metadata_store.h"
 #include <fstream>
 #include <sstream>
 #include <algorithm>
 #include <mutex>
 #include <set>
 
-namespace sage_db {
+namespace sage_vdb {
 
 MetadataStore::MetadataStore() = default;
 
@@ -38,7 +38,7 @@ bool MetadataStore::remove_metadata(VectorId id) {
 void MetadataStore::set_batch_metadata(const std::vector<VectorId>& ids, 
                                       const std::vector<Metadata>& metadata) {
     if (ids.size() != metadata.size()) {
-        throw SageDBException("IDs and metadata vectors must have the same size");
+        throw SageVDBException("IDs and metadata vectors must have the same size");
     }
     
     for (const auto& meta : metadata) {
@@ -137,7 +137,7 @@ void MetadataStore::save(const std::string& filepath) const {
     std::ofstream file(filepath);
     
     if (!file.is_open()) {
-        throw SageDBException("Cannot open file for writing: " + filepath);
+        throw SageVDBException("Cannot open file for writing: " + filepath);
     }
     
     // Simple JSON-like format
@@ -162,7 +162,7 @@ void MetadataStore::save(const std::string& filepath) const {
 void MetadataStore::load(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
-        throw SageDBException("Cannot open file for reading: " + filepath);
+        throw SageVDBException("Cannot open file for reading: " + filepath);
     }
 
     std::unique_lock<std::shared_mutex> lock(mutex_);
@@ -233,20 +233,20 @@ void MetadataStore::clear() {
 void MetadataStore::validate_metadata(const Metadata& metadata) const {
     // Check for reasonable metadata size
     if (metadata.size() > 1000) {
-        throw SageDBException("Too many metadata fields (max 1000)");
+        throw SageVDBException("Too many metadata fields (max 1000)");
     }
     
     for (const auto& pair : metadata) {
         if (pair.first.empty()) {
-            throw SageDBException("Metadata key cannot be empty");
+            throw SageVDBException("Metadata key cannot be empty");
         }
         if (pair.first.length() > 256) {
-            throw SageDBException("Metadata key too long (max 256 characters)");
+            throw SageVDBException("Metadata key too long (max 256 characters)");
         }
         if (pair.second.length() > 10000) {
-            throw SageDBException("Metadata value too long (max 10000 characters)");
+            throw SageVDBException("Metadata value too long (max 10000 characters)");
         }
     }
 }
 
-} // namespace sage_db
+} // namespace sage_vdb

@@ -1,10 +1,10 @@
-#include "sage_db/anns/brute_force_plugin.h"
+#include "sage_vdb/anns/brute_force_plugin.h"
 #include <fstream>
 #include <algorithm>
 #include <cmath>
 #include <chrono>
 
-namespace sage_db {
+namespace sage_vdb {
 namespace anns {
 
 namespace {
@@ -349,4 +349,4 @@ QueryConfig BruteForceANNSFactory::default_query_config() const {
 }
 
 } // namespace anns
-} // namespace sage_db
+} // namespace sage_vdb

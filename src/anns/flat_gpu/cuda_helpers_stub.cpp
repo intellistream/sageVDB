@@ -1,9 +1,9 @@
-#include "sage_db/anns/flat_gpu/cuda_helpers.h"
+#include "sage_vdb/anns/flat_gpu/cuda_helpers.h"
 
 #include <stdexcept>
 #include <vector>
 
-namespace sage_db {
+namespace sage_vdb {
 namespace anns {
 namespace flat_gpu {
 
@@ -60,4 +60,4 @@ CUDABackend::CUDABackend(int /*device*/) : impl_(nullptr) {}
 
 } // namespace flat_gpu
 } // namespace anns
-} // namespace sage_db
+} // namespace sage_vdb

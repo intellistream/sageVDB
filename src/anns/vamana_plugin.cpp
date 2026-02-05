@@ -1,7 +1,7 @@
-#include "sage_db/anns/vamana_plugin.h"
+#include "sage_vdb/anns/vamana_plugin.h"
 
-#include "sage_db/anns/vamana/vertex.h"
-#include "sage_db/anns/vamana/distance.h"
+#include "sage_vdb/anns/vamana/vertex.h"
+#include "sage_vdb/anns/vamana/distance.h"
 
 #include <algorithm>
 #include <chrono>
@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace sage_db {
+namespace sage_vdb {
 namespace anns {
 
 namespace {
@@ -707,4 +707,4 @@ QueryConfig VamanaANNSFactory::default_query_config() const {
 }
 
 }  // namespace anns
-}  // namespace sage_db
+}  // namespace sage_vdb

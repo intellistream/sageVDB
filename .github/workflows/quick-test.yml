@@ -76,5 +76,5 @@ jobs:
         run: |
           echo "Testing library dependencies..."
           cd build
-          ldd libsage_db.so || true
-          LD_LIBRARY_PATH=$PWD:$CONDA_PREFIX/lib ldd test_sage_db || true
+          ldd libsage_vdb.so || true
+          LD_LIBRARY_PATH=$PWD:$CONDA_PREFIX/lib ldd test_sage_vdb || true

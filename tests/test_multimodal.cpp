@@ -1,10 +1,10 @@
-#include "sage_db/multimodal_sage_db.h"
-#include "sage_db/fusion_strategies.h"
+#include "sage_vdb/multimodal_sage_vdb.h"
+#include "sage_vdb/fusion_strategies.h"
 #include <cassert>
 #include <iostream>
 #include <numeric>
 
-using namespace sage_db;
+using namespace sage_vdb;
 
 // 测试基本的多模态功能
 void test_basic_multimodal() {
@@ -21,7 +21,7 @@ void test_basic_multimodal() {
     multimodal_config.default_fusion_params.target_dimension = config.dimension;
     multimodal_config.default_fusion_params.strategy = FusionStrategy::CONCATENATION;
     
-    MultimodalSageDB db(multimodal_config);
+    MultimodalSageVDB db(multimodal_config);
     
     // 创建测试数据
     Vector text_embedding(100);
@@ -115,12 +115,12 @@ void test_factory() {
     config.index_type = IndexType::FLAT;
     
     // 测试文本-图像数据库
-    auto text_image_db = MultimodalSageDBFactory::create_text_image_db(config);
+    auto text_image_db = MultimodalSageVDBFactory::create_text_image_db(config);
     assert(text_image_db != nullptr);
     assert(text_image_db->validate_multimodal_config());
     
     // 测试音视频数据库
-    auto audio_visual_db = MultimodalSageDBFactory::create_audio_visual_db(config);
+    auto audio_visual_db = MultimodalSageVDBFactory::create_audio_visual_db(config);
     assert(audio_visual_db != nullptr);
     assert(audio_visual_db->validate_multimodal_config());
     
@@ -177,7 +177,7 @@ void test_custom_strategy() {
     // 设置target_dimension以确保自定义融合策略输出正确维度
     multimodal_config.default_fusion_params.target_dimension = config.dimension;
     
-    MultimodalSageDB db(multimodal_config);
+    MultimodalSageVDB db(multimodal_config);
     
     // 注册自定义策略
     db.register_fusion_strategy(FusionStrategy::CUSTOM, 
@@ -203,7 +203,7 @@ void test_custom_strategy() {
 }
 
 int main() {
-    std::cout << "=== SAGE DB 多模态融合模块单元测试 ===" << std::endl;
+    std::cout << "=== SageVDB 多模态融合模块单元测试 ===" << std::endl;
     
     try {
         test_basic_multimodal();

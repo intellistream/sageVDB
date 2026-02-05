@@ -21,7 +21,7 @@ __email__ = "shuhao_zhang@hust.edu.cn"
 try:
     from ._sagevdb import (
         # Main classes
-        SageDB,
+        SageVDB,
         VectorStore,
         MetadataStore,
         QueryEngine,
@@ -52,12 +52,12 @@ try:
         search_numpy,
         
         # Exception
-        SageDBException,
+        SageVDBException,
     )
     
     __all__ = [
         # Main classes
-        'SageDB',
+        'SageVDB',
         'VectorStore',
         'MetadataStore',
         'QueryEngine',
@@ -88,15 +88,15 @@ try:
         'search_numpy',
         
         # Exception
-        'SageDBException',
+        'SageVDBException',
     ]
     
 except ImportError as e:
     import warnings
     warnings.warn(
-        f"Failed to import sageDB native extension: {e}\n"
+        f"Failed to import SageVDB native extension: {e}\n"
         "The package may not be properly installed. "
-        "Try reinstalling with: pip install --force-reinstall sagedb",
+        "Try reinstalling with: pip install --force-reinstall SageVDB",
         ImportWarning
     )
     # Provide empty stubs to prevent total failure

@@ -1,4 +1,4 @@
-#include "sage_db/anns/faiss_plugin.h"
+#include "sage_vdb/anns/faiss_plugin.h"
 
 #include <algorithm>
 #include <chrono>
@@ -21,7 +21,7 @@
 #include <faiss/impl/FaissAssert.h>
 #endif
 
-namespace sage_db {
+namespace sage_vdb {
 namespace anns {
 
 namespace {
@@ -790,4 +790,4 @@ void FaissANNS::apply_query_params(const QueryConfig& config) const {
 }
 
 } // namespace anns
-} // namespace sage_db
+} // namespace sage_vdb

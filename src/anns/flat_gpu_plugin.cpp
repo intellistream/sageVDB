@@ -1,4 +1,4 @@
-#include "sage_db/anns/flat_gpu_plugin.h"
+#include "sage_vdb/anns/flat_gpu_plugin.h"
 
 #include <algorithm>
 #include <chrono>
@@ -17,9 +17,9 @@
 #include "LibAMM.h"
 #endif
 
-#include "sage_db/anns/flat_gpu/cuda_helpers.h"
+#include "sage_vdb/anns/flat_gpu/cuda_helpers.h"
 
-namespace sage_db {
+namespace sage_vdb {
 namespace anns {
 
 namespace {
@@ -1045,4 +1045,4 @@ QueryConfig FlatGPUANNSFactory::default_query_config() const {
 }
 
 } // namespace anns
-} // namespace sage_db
+} // namespace sage_vdb

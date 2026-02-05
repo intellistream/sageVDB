@@ -2,16 +2,16 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <pybind11/functional.h>
-#include "sage_db/sage_db.h"
+#include "sage_vdb/sage_vdb.h"
 
 namespace py = pybind11;
-using namespace sage_db;
+using namespace sage_vdb;
 
 PYBIND11_MODULE(_sagevdb, m) {
     m.doc() = "SAGE Database - High-performance vector database with FAISS backend";
 
     // Exceptions
-    py::register_exception<SageDBException>(m, "SageDBException");
+    py::register_exception<SageVDBException>(m, "SageVDBException");
 
     // Enums
     py::enum_<IndexType>(m, "IndexType")
@@ -123,8 +123,8 @@ PYBIND11_MODULE(_sagevdb, m) {
              py::arg("query"), py::arg("params"), py::arg("rerank_fn"), py::arg("rerank_k") = 100)
         .def("get_last_search_stats", &QueryEngine::get_last_search_stats);
 
-    // SageDB (main class)
-    py::class_<SageDB>(m, "SageDB")
+    // SageVDB (main class)
+    py::class_<SageVDB>(m, "SageVDB")
         .def(py::init<const DatabaseConfig&>())
         // 便捷构造函数
         .def(py::init([](Dimension dimension, IndexType index_type, DistanceMetric metric) {
@@ -132,10 +132,10 @@ PYBIND11_MODULE(_sagevdb, m) {
             config.dimension = dimension;
             config.index_type = index_type;
             config.metric = metric;
-            return std::make_unique<SageDB>(config);
+            return std::make_unique<SageVDB>(config);
         }), py::arg("dimension"), py::arg("index_type") = IndexType::AUTO, py::arg("metric") = DistanceMetric::L2)
         // Vector operations with GIL release for better multi-threading
-        .def("add", [](SageDB& self, const Vector& vector, const Metadata& metadata) -> VectorId {
+        .def("add", [](SageVDB& self, const Vector& vector, const Metadata& metadata) -> VectorId {
             // Release GIL during C++ computation
             py::gil_scoped_release release;
             VectorId id = self.add(vector, metadata);
@@ -144,7 +144,7 @@ PYBIND11_MODULE(_sagevdb, m) {
         }, py::arg("vector"), py::arg("metadata") = Metadata{},
            "Add a single vector with optional metadata. Thread-safe with GIL released.")
 
-        .def("add_batch", [](SageDB& self, const std::vector<Vector>& vectors,
+        .def("add_batch", [](SageVDB& self, const std::vector<Vector>& vectors,
                             const std::vector<Metadata>& metadata) -> std::vector<VectorId> {
             // Release GIL for batch operations
             py::gil_scoped_release release;
@@ -154,14 +154,14 @@ PYBIND11_MODULE(_sagevdb, m) {
         }, py::arg("vectors"), py::arg("metadata") = std::vector<Metadata>{},
            "Batch add vectors. GIL released for true parallelism.")
 
-        .def("remove", [](SageDB& self, VectorId id) -> bool {
+        .def("remove", [](SageVDB& self, VectorId id) -> bool {
             py::gil_scoped_release release;
             bool result = self.remove(id);
             py::gil_scoped_acquire acquire;
             return result;
         })
 
-        .def("update", [](SageDB& self, VectorId id, const Vector& vector,
+        .def("update", [](SageVDB& self, VectorId id, const Vector& vector,
                          const Metadata& metadata) -> bool {
             py::gil_scoped_release release;
             bool result = self.update(id, vector, metadata);
@@ -170,7 +170,7 @@ PYBIND11_MODULE(_sagevdb, m) {
         }, py::arg("id"), py::arg("vector"), py::arg("metadata") = Metadata{})
 
         // Search operations - GIL released for maximum parallelism
-        .def("search", [](const SageDB& self, const Vector& query, uint32_t k,
+        .def("search", [](const SageVDB& self, const Vector& query, uint32_t k,
                          bool include_metadata) -> std::vector<QueryResult> {
             // Release GIL - this is the key for multi-threaded search performance!
             py::gil_scoped_release release;
@@ -194,7 +194,7 @@ PYBIND11_MODULE(_sagevdb, m) {
                    List of QueryResult objects sorted by distance
            )pbdoc")
 
-        .def("search", [](const SageDB& self, const Vector& query,
+        .def("search", [](const SageVDB& self, const Vector& query,
                          const SearchParams& params) -> std::vector<QueryResult> {
             py::gil_scoped_release release;
             auto results = self.search(query, params);
@@ -202,7 +202,7 @@ PYBIND11_MODULE(_sagevdb, m) {
             return results;
         })
 
-        .def("filtered_search", [](const SageDB& self, const Vector& query,
+        .def("filtered_search", [](const SageVDB& self, const Vector& query,
                                    const SearchParams& params,
                                    std::function<bool(const Metadata&)> filter) -> std::vector<QueryResult> {
             py::gil_scoped_release release;
@@ -211,7 +211,7 @@ PYBIND11_MODULE(_sagevdb, m) {
             return results;
         })
 
-        .def("batch_search", [](const SageDB& self, const std::vector<Vector>& queries,
+        .def("batch_search", [](const SageVDB& self, const std::vector<Vector>& queries,
                                const SearchParams& params) -> std::vector<std::vector<QueryResult>> {
             // Batch search with GIL released - highest performance operation!
             py::gil_scoped_release release;
@@ -233,48 +233,48 @@ PYBIND11_MODULE(_sagevdb, m) {
            )pbdoc")
 
         // Index management operations with GIL release
-        .def("build_index", [](SageDB& self) {
+        .def("build_index", [](SageVDB& self) {
             py::gil_scoped_release release;
             self.build_index();
             py::gil_scoped_acquire acquire;
         }, "Build/rebuild the search index. GIL released during index construction.")
 
-        .def("train_index", [](SageDB& self, const std::vector<Vector>& training_data) {
+        .def("train_index", [](SageVDB& self, const std::vector<Vector>& training_data) {
             py::gil_scoped_release release;
             self.train_index(training_data);
             py::gil_scoped_acquire acquire;
         }, py::arg("training_data") = std::vector<Vector>{},
            "Train the index (for algorithms that require training). GIL released.")
 
-        .def("is_trained", &SageDB::is_trained)
-        .def("set_metadata", &SageDB::set_metadata)
-        .def("get_metadata", [](const SageDB& db, VectorId id) {
+        .def("is_trained", &SageVDB::is_trained)
+        .def("set_metadata", &SageVDB::set_metadata)
+        .def("get_metadata", [](const SageVDB& db, VectorId id) {
             Metadata metadata;
             bool found = db.get_metadata(id, metadata);
             return found ? py::cast(metadata) : py::none();
         })
-        .def("find_by_metadata", &SageDB::find_by_metadata)
-        .def("save", &SageDB::save)
-        .def("load", &SageDB::load)
-        .def("size", &SageDB::size)
-        .def("dimension", &SageDB::dimension)
-        .def("index_type", &SageDB::index_type)
-        .def("config", &SageDB::config, py::return_value_policy::reference_internal)
-        .def("query_engine", py::overload_cast<>(&SageDB::query_engine),
+        .def("find_by_metadata", &SageVDB::find_by_metadata)
+        .def("save", &SageVDB::save)
+        .def("load", &SageVDB::load)
+        .def("size", &SageVDB::size)
+        .def("dimension", &SageVDB::dimension)
+        .def("index_type", &SageVDB::index_type)
+        .def("config", &SageVDB::config, py::return_value_policy::reference_internal)
+        .def("query_engine", py::overload_cast<>(&SageVDB::query_engine),
              py::return_value_policy::reference_internal)
-        .def("vector_store", py::overload_cast<>(&SageDB::vector_store),
+        .def("vector_store", py::overload_cast<>(&SageVDB::vector_store),
              py::return_value_policy::reference_internal)
-        .def("metadata_store", py::overload_cast<>(&SageDB::metadata_store),
+        .def("metadata_store", py::overload_cast<>(&SageVDB::metadata_store),
              py::return_value_policy::reference_internal);
 
     // Factory functions
     m.def("create_database", py::overload_cast<Dimension, IndexType, DistanceMetric>(&create_database),
           py::arg("dimension"), py::arg("index_type") = IndexType::AUTO,
           py::arg("metric") = DistanceMetric::L2,
-          "Create a new SageDB instance with basic configuration");
+          "Create a new SageVDB instance with basic configuration");
 
     m.def("create_database", py::overload_cast<const DatabaseConfig&>(&create_database),
-          py::arg("config"), "Create a new SageDB instance with custom configuration");
+          py::arg("config"), "Create a new SageVDB instance with custom configuration");
 
     // Utility functions
     m.def("index_type_to_string", &index_type_to_string);
@@ -283,7 +283,7 @@ PYBIND11_MODULE(_sagevdb, m) {
     m.def("string_to_distance_metric", &string_to_distance_metric);
 
     // NumPy array support with GIL release
-    m.def("add_numpy", [](SageDB& db, py::array_t<float> vectors, py::list metadata_list = py::list()) {
+    m.def("add_numpy", [](SageVDB& db, py::array_t<float> vectors, py::list metadata_list = py::list()) {
         py::buffer_info buf = vectors.request();
 
         if (buf.ndim != 2) {
@@ -330,7 +330,7 @@ PYBIND11_MODULE(_sagevdb, m) {
     }, py::arg("db"), py::arg("vectors"), py::arg("metadata") = py::list(),
        "Add vectors from NumPy array. GIL released during insertion for parallelism.");
 
-    m.def("search_numpy", [](const SageDB& db, py::array_t<float> query, const SearchParams& params) {
+    m.def("search_numpy", [](const SageVDB& db, py::array_t<float> query, const SearchParams& params) {
         py::buffer_info buf = query.request();
 
         if (buf.ndim != 1 || buf.shape[0] != db.dimension()) {

@@ -1,7 +1,7 @@
-#include "sage_db/multimodal_fusion.h"
+#include "sage_vdb/multimodal_fusion.h"
 #include <stdexcept>
 
-namespace sage_db {
+namespace sage_vdb {
 
 // ========== ModalityManager 实现 ==========
 void ModalityManager::register_processor(ModalityType type, 
@@ -85,4 +85,4 @@ std::vector<FusionStrategy> FusionEngine::get_supported_strategies() const {
     return strategies;
 }
 
-} // namespace sage_db
+} // namespace sage_vdb

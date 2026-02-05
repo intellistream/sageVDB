@@ -1,10 +1,10 @@
-#include "sage_db/anns/song_plugin.h"
+#include "sage_vdb/anns/song_plugin.h"
 
 #ifdef ENABLE_SONG
 
-#include "sage_db/common.h"
-#include "sage_db/anns/song/data.hpp"
-#include "sage_db/anns/song/kernelgraph.cuh"
+#include "sage_vdb/common.h"
+#include "sage_vdb/anns/song/data.hpp"
+#include "sage_vdb/anns/song/kernelgraph.cuh"
 
 #include <algorithm>
 #include <chrono>
@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-namespace sage_db {
+namespace sage_vdb {
 namespace anns {
 
 namespace {
@@ -497,6 +497,6 @@ QueryConfig SongANNSFactory::default_query_config() const {
 }
 
 } // namespace anns
-} // namespace sage_db
+} // namespace sage_vdb
 
 #endif // ENABLE_SONG

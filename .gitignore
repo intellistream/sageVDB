@@ -16,7 +16,7 @@ __pycache__/
 *.a
 
 # Specific compiled files
-python/_sage_db.cpython-*-linux-gnu.so
+python/_sage_vdb.cpython-*-linux-gnu.so
 dist/*
 wheelhouse/*
 .env

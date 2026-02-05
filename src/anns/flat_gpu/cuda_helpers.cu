@@ -1,4 +1,4 @@
-#include "sage_db/anns/flat_gpu/cuda_helpers.h"
+#include "sage_vdb/anns/flat_gpu/cuda_helpers.h"
 
 #ifdef ENABLE_FLATGPU_CUDA
 
@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace sage_db {
+namespace sage_vdb {
 namespace anns {
 namespace flat_gpu {
 
@@ -388,6 +388,6 @@ float* CUDABackend::query_device_ptr(const QueryScratch& scratch) const {
 
 } // namespace flat_gpu
 } // namespace anns
-} // namespace sage_db
+} // namespace sage_vdb
 
 #endif // ENABLE_FLATGPU_CUDA

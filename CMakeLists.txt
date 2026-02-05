@@ -14,11 +14,11 @@ option(ENABLE_SONG "Enable SONG GPU ANN backend" OFF)
 option(ENABLE_FLATGPU_CUDA "Enable CUDA acceleration for FlatGPU index" OFF)
 option(ENABLE_LIBAMM "Enable LibAMM accelerated sketch backends" ON)
 
-set(_sage_db_enable_gperftools_default OFF)
+set(_sage_vdb_enable_gperftools_default OFF)
 if(DEFINED SAGE_ENABLE_GPERFTOOLS)
-    set(_sage_db_enable_gperftools_default ${SAGE_ENABLE_GPERFTOOLS})
+    set(_sage_vdb_enable_gperftools_default ${SAGE_ENABLE_GPERFTOOLS})
 endif()
-option(ENABLE_GPERFTOOLS "Enable gperftools profiling support" ${_sage_db_enable_gperftools_default})
+option(ENABLE_GPERFTOOLS "Enable gperftools profiling support" ${_sage_vdb_enable_gperftools_default})
 if(DEFINED SAGE_ENABLE_GPERFTOOLS)
     set(ENABLE_GPERFTOOLS ${SAGE_ENABLE_GPERFTOOLS} CACHE BOOL "Enable gperftools profiling support" FORCE)
 endif()
@@ -68,8 +68,8 @@ if(USE_OPENMP)
 endif()
 
 # Source files
-set(SAGE_DB_SOURCES
-    src/sage_db.cpp
+set(sage_vdb_SOURCES
+    src/sage_vdb.cpp
     src/vector_store.cpp
     src/metadata_store.cpp
     src/query_engine.cpp
@@ -77,94 +77,94 @@ set(SAGE_DB_SOURCES
     src/anns/brute_force_plugin.cpp
 )
 
-set(SAGE_DB_HEADERS
-    include/sage_db/sage_db.h
-    include/sage_db/vector_store.h
-    include/sage_db/metadata_store.h
-    include/sage_db/query_engine.h
-    include/sage_db/common.h
-    include/sage_db/anns/anns_interface.h
-    include/sage_db/anns/brute_force_plugin.h
+set(sage_vdb_HEADERS
+    include/sage_vdb/sage_vdb.h
+    include/sage_vdb/vector_store.h
+    include/sage_vdb/metadata_store.h
+    include/sage_vdb/query_engine.h
+    include/sage_vdb/common.h
+    include/sage_vdb/anns/anns_interface.h
+    include/sage_vdb/anns/brute_force_plugin.h
 )
 
 if(ENABLE_SONG)
     message(STATUS "SONG ANN backend enabled")
-    list(APPEND SAGE_DB_SOURCES src/anns/song_plugin.cpp)
-    list(APPEND SAGE_DB_HEADERS include/sage_db/anns/song_plugin.h)
+    list(APPEND sage_vdb_SOURCES src/anns/song_plugin.cpp)
+    list(APPEND sage_vdb_HEADERS include/sage_vdb/anns/song_plugin.h)
 endif()
 
-list(APPEND SAGE_DB_SOURCES src/anns/vamana_plugin.cpp)
-list(APPEND SAGE_DB_HEADERS include/sage_db/anns/vamana_plugin.h)
+list(APPEND sage_vdb_SOURCES src/anns/vamana_plugin.cpp)
+list(APPEND sage_vdb_HEADERS include/sage_vdb/anns/vamana_plugin.h)
 
-list(APPEND SAGE_DB_SOURCES src/anns/flat_gpu_plugin.cpp)
-list(APPEND SAGE_DB_HEADERS include/sage_db/anns/flat_gpu_plugin.h)
-list(APPEND SAGE_DB_HEADERS include/sage_db/anns/flat_gpu/cuda_helpers.h)
+list(APPEND sage_vdb_SOURCES src/anns/flat_gpu_plugin.cpp)
+list(APPEND sage_vdb_HEADERS include/sage_vdb/anns/flat_gpu_plugin.h)
+list(APPEND sage_vdb_HEADERS include/sage_vdb/anns/flat_gpu/cuda_helpers.h)
 
 if(ENABLE_FLATGPU_CUDA)
     enable_language(CUDA)
-    list(APPEND SAGE_DB_SOURCES src/anns/flat_gpu/cuda_helpers.cu)
+    list(APPEND sage_vdb_SOURCES src/anns/flat_gpu/cuda_helpers.cu)
 else()
-    list(APPEND SAGE_DB_SOURCES src/anns/flat_gpu/cuda_helpers_stub.cpp)
+    list(APPEND sage_vdb_SOURCES src/anns/flat_gpu/cuda_helpers_stub.cpp)
 endif()
 
 if(FAISS_FOUND)
-    list(APPEND SAGE_DB_SOURCES src/anns/faiss_plugin.cpp)
-    list(APPEND SAGE_DB_HEADERS include/sage_db/anns/faiss_plugin.h)
+    list(APPEND sage_vdb_SOURCES src/anns/faiss_plugin.cpp)
+    list(APPEND sage_vdb_HEADERS include/sage_vdb/anns/faiss_plugin.h)
 endif()
 
 # Multimodal fusion sources and headers
 if(ENABLE_MULTIMODAL)
-    list(APPEND SAGE_DB_SOURCES
-        src/multimodal_sage_db.cpp
+    list(APPEND sage_vdb_SOURCES
+        src/multimodal_sage_vdb.cpp
         src/fusion_strategies.cpp
         src/modality_manager.cpp
         src/modality_processors.cpp
     )
     
-    list(APPEND SAGE_DB_HEADERS
-        include/sage_db/multimodal_fusion.h
-        include/sage_db/multimodal_sage_db.h
-        include/sage_db/fusion_strategies.h
-        include/sage_db/modality_processors.h
+    list(APPEND sage_vdb_HEADERS
+        include/sage_vdb/multimodal_fusion.h
+        include/sage_vdb/multimodal_sage_vdb.h
+        include/sage_vdb/fusion_strategies.h
+        include/sage_vdb/modality_processors.h
     )
 endif()
 
 # Create shared library
-add_library(sage_db SHARED ${SAGE_DB_SOURCES})
+add_library(sage_vdb SHARED ${sage_vdb_SOURCES})
 
 if(ENABLE_SONG)
-    target_compile_definitions(sage_db PRIVATE ENABLE_SONG)
+    target_compile_definitions(sage_vdb PRIVATE ENABLE_SONG)
 endif()
 
 if(ENABLE_FLATGPU_CUDA)
-    target_compile_definitions(sage_db PRIVATE ENABLE_FLATGPU_CUDA)
+    target_compile_definitions(sage_vdb PRIVATE ENABLE_FLATGPU_CUDA)
 endif()
 
 # Include directories
-target_include_directories(sage_db PUBLIC
+target_include_directories(sage_vdb PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 
 if(FAISS_FOUND)
-    target_include_directories(sage_db PRIVATE ${FAISS_INCLUDE_DIR})
-    target_link_libraries(sage_db PRIVATE ${FAISS_LIBRARY})
+    target_include_directories(sage_vdb PRIVATE ${FAISS_INCLUDE_DIR})
+    target_link_libraries(sage_vdb PRIVATE ${FAISS_LIBRARY})
     if(HAVE_BLAS_LAPACK)
-        target_link_libraries(sage_db PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+        target_link_libraries(sage_vdb PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
     endif()
-    target_compile_definitions(sage_db PRIVATE ENABLE_FAISS)
+    target_compile_definitions(sage_vdb PRIVATE ENABLE_FAISS)
 endif()
 
 # Multimodal fusion dependencies
 if(ENABLE_MULTIMODAL)
-    target_compile_definitions(sage_db PRIVATE MULTIMODAL_ENABLED)
+    target_compile_definitions(sage_vdb PRIVATE MULTIMODAL_ENABLED)
     
     # OpenCV for image processing
     if(ENABLE_OPENCV)
         find_package(OpenCV REQUIRED)
-        target_include_directories(sage_db PRIVATE ${OpenCV_INCLUDE_DIRS})
-        target_link_libraries(sage_db PRIVATE ${OpenCV_LIBS})
-        target_compile_definitions(sage_db PRIVATE OPENCV_ENABLED)
+        target_include_directories(sage_vdb PRIVATE ${OpenCV_INCLUDE_DIRS})
+        target_link_libraries(sage_vdb PRIVATE ${OpenCV_LIBS})
+        target_compile_definitions(sage_vdb PRIVATE OPENCV_ENABLED)
     endif()
     
     # FFmpeg for audio/video processing  
@@ -172,16 +172,16 @@ if(ENABLE_MULTIMODAL)
         find_package(PkgConfig)
         if(PKG_CONFIG_FOUND)
             pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale)
-            target_include_directories(sage_db PRIVATE ${FFMPEG_INCLUDE_DIRS})
-            target_link_libraries(sage_db PRIVATE ${FFMPEG_LIBRARIES})
-            target_compile_definitions(sage_db PRIVATE FFMPEG_ENABLED)
+            target_include_directories(sage_vdb PRIVATE ${FFMPEG_INCLUDE_DIRS})
+            target_link_libraries(sage_vdb PRIVATE ${FFMPEG_LIBRARIES})
+            target_compile_definitions(sage_vdb PRIVATE FFMPEG_ENABLED)
         endif()
     endif()
 endif()
 
 # OpenMP linking
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(sage_db PUBLIC OpenMP::OpenMP_CXX)
+    target_link_libraries(sage_vdb PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
 # LibAMM accelerated sketch support
@@ -349,32 +349,32 @@ if(ENABLE_LIBAMM)
         # Built in: ${CMAKE_CURRENT_BINARY_DIR}/_deps/libamm-build/
     endif()
 
-    target_link_libraries(sage_db PRIVATE LibAMM)
+    target_link_libraries(sage_vdb PRIVATE LibAMM)
 
     if(Torch_FOUND)
         if(TORCH_INCLUDE_DIRS)
-            target_include_directories(sage_db PRIVATE ${TORCH_INCLUDE_DIRS})
+            target_include_directories(sage_vdb PRIVATE ${TORCH_INCLUDE_DIRS})
         endif()
         if(TORCH_LIBRARIES)
-            target_link_libraries(sage_db PRIVATE ${TORCH_LIBRARIES})
+            target_link_libraries(sage_vdb PRIVATE ${TORCH_LIBRARIES})
         endif()
         if(TORCH_CXX_FLAGS)
             separate_arguments(_TORCH_CXX_FLAGS_LIST NATIVE_COMMAND ${TORCH_CXX_FLAGS})
             if(_TORCH_CXX_FLAGS_LIST)
-                target_compile_options(sage_db PRIVATE ${_TORCH_CXX_FLAGS_LIST})
+                target_compile_options(sage_vdb PRIVATE ${_TORCH_CXX_FLAGS_LIST})
             endif()
         endif()
     endif()
 
     # Use libamm_SOURCE_DIR (set by either local path or FetchContent)
-    target_include_directories(sage_db PRIVATE
+    target_include_directories(sage_vdb PRIVATE
         ${libamm_SOURCE_DIR}/include
     )
-    target_compile_definitions(sage_db PRIVATE ENABLE_LIBAMM)
+    target_compile_definitions(sage_vdb PRIVATE ENABLE_LIBAMM)
 endif()
 
 # Compiler specific options
-target_compile_options(sage_db PRIVATE
+target_compile_options(sage_vdb PRIVATE
     $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -O3>
     $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -O3>
     $<$<CXX_COMPILER_ID:MSVC>:/W4 /O2>
@@ -384,16 +384,16 @@ target_compile_options(sage_db PRIVATE
 if(BUILD_TESTS)
     enable_testing()
     
-    add_executable(test_sage_db tests/test_sage_db.cpp)
-    target_link_libraries(test_sage_db PRIVATE sage_db)
-    target_include_directories(test_sage_db PRIVATE include)
+    add_executable(test_sage_vdb tests/test_sage_vdb.cpp)
+    target_link_libraries(test_sage_vdb PRIVATE sage_vdb)
+    target_include_directories(test_sage_vdb PRIVATE include)
     
-    add_test(NAME test_sage_db COMMAND test_sage_db)
+    add_test(NAME test_sage_vdb COMMAND test_sage_vdb)
     
     # Multimodal tests
     if(ENABLE_MULTIMODAL)
         add_executable(test_multimodal tests/test_multimodal.cpp)
-        target_link_libraries(test_multimodal PRIVATE sage_db)
+        target_link_libraries(test_multimodal PRIVATE sage_vdb)
         target_include_directories(test_multimodal PRIVATE include)
         
         add_test(NAME test_multimodal COMMAND test_multimodal)
@@ -402,7 +402,7 @@ if(BUILD_TESTS)
     # LibAMM integration tests
     if(ENABLE_LIBAMM)
         add_executable(test_libamm_integration tests/test_libamm_integration.cpp)
-        target_link_libraries(test_libamm_integration PRIVATE sage_db)
+        target_link_libraries(test_libamm_integration PRIVATE sage_vdb)
         target_include_directories(test_libamm_integration PRIVATE include)
         
         add_test(NAME test_libamm_integration COMMAND test_libamm_integration)
@@ -424,20 +424,20 @@ if(DEFINED SKBUILD)
     
     if(_is_editable)
         # Editable install: use parent-defined install dir if available, else fallback
-        if(DEFINED SAGE_DB_INSTALL_DIR)
-            set(_lib_install_dest "${SAGE_DB_INSTALL_DIR}")
-            message(STATUS "sageDB: Using parent-defined install dir: ${_lib_install_dest}")
+        if(DEFINED sage_vdb_INSTALL_DIR)
+            set(_lib_install_dest "${sage_vdb_INSTALL_DIR}")
+            message(STATUS "SageVDB: Using parent-defined install dir: ${_lib_install_dest}")
         else()
-            set(_lib_install_dest "${CMAKE_CURRENT_SOURCE_DIR}/python")
-            message(STATUS "sageDB: Using default editable install dir: ${_lib_install_dest}")
+            set(_lib_install_dest "${CMAKE_CURRENT_SOURCE_DIR}/sagevdb")
+            message(STATUS "SageVDB: Using default editable install dir: ${_lib_install_dest}")
         endif()
     else()
         # Wheel build: install to wheel platlib (same directory as Python extension)
         set(_lib_install_dest "${SKBUILD_PLATLIB_DIR}/sagevdb")
-        message(STATUS "sageDB: Wheel build, lib -> ${_lib_install_dest}")
+        message(STATUS "SageVDB: Wheel build, lib -> ${_lib_install_dest}")
     endif()
     
-    install(TARGETS sage_db
+    install(TARGETS sage_vdb
         LIBRARY DESTINATION ${_lib_install_dest}
         ARCHIVE DESTINATION ${_lib_install_dest}
         RUNTIME DESTINATION ${_lib_install_dest}
@@ -445,8 +445,8 @@ if(DEFINED SKBUILD)
     )
 else()
     # 独立 C++ 构建模式：标准安装路径
-    install(TARGETS sage_db
-        EXPORT sage_db_targets
+    install(TARGETS sage_vdb
+        EXPORT sage_vdb_targets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
@@ -461,6 +461,6 @@ install(DIRECTORY include/ DESTINATION include)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 
 if(BUILD_PYTHON_BINDINGS)
-    message(STATUS "Building Python bindings for sage_db")
+    message(STATUS "Building Python bindings for sage_vdb")
     add_subdirectory(python)
 endif()

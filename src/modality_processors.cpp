@@ -1,4 +1,4 @@
-#include "sage_db/modality_processors.h"
+#include "sage_vdb/modality_processors.h"
 #include <algorithm>
 #include <numeric>
 #include <cmath>
@@ -18,7 +18,7 @@
 #include <opencv2/videoio.hpp>
 #endif
 
-namespace sage_db {
+namespace sage_vdb {
 
 // ===================== Utility helpers =====================
 namespace {
@@ -537,7 +537,7 @@ std::vector<cv::Mat> VideoModalityProcessor::extract_frames(const std::vector<ui
     std::random_device rd;
     std::mt19937_64 gen(rd());
     std::uniform_int_distribution<uint64_t> dis;
-    std::string tmp_filename = "sagedb_vid_" + std::to_string(dis(gen)) + ".mp4";
+    std::string tmp_filename = "SageVDB_vid_" + std::to_string(dis(gen)) + ".mp4";
     std::filesystem::path tmp_path = tmp_dir / tmp_filename;
     
     {
@@ -937,4 +937,4 @@ std::shared_ptr<ModalityProcessor> ModalityProcessorFactory::create_custom_proce
     return it->second();
 }
 
-} // namespace sage_db
+} // namespace sage_vdb
