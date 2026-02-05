@@ -928,6 +928,21 @@ db = _sage_vdb.SageVDB(config)
 # ... use from Python ...
 ```
 
+Use the optional `sage-anns` Python backend (no C++ rebuild required):
+
+```python
+from sagevdb import create_database
+
+db = create_database(
+    128,
+    backend="sage-anns",
+    algorithm="faiss_hnsw",
+    metric="l2",
+    M=32,
+    ef_construction=200,
+)
+```
+
 See `../README.md` for Python API documentation.
 
 ### Shared Library
