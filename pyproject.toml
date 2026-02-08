@@ -42,7 +42,6 @@ dev = [
     "pytest-cov",
     "black",
     "isort",
-    "mypy",
 ]
 faiss = [
     "faiss-cpu>=1.7.0",
