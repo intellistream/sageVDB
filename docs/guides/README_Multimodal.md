@@ -1,4 +1,4 @@
-# SAGE DB 多模态数据融合模块
+# SageVDB 多模态数据融合模块
 
 ## 概述
 
@@ -34,24 +34,24 @@
 
 ```bash
 # 推荐：通过 CLI 安装原生扩展
-sage extensions install sage_db  # 需要重新编译时可追加 --force
+sage extensions install sage_vdb  # 需要重新编译时可追加 --force
 
 # 可选：在组件目录手动运行构建脚本（调试/定制场景）
-cd packages/sage-middleware/src/sage/middleware/components/sage_db
+cd packages/sage-middleware/src/sage/middleware/components/sage_vdb
 ./build_multimodal.sh
 ```
 
 ### 基本使用
 
 ```cpp
-#include "sage_db/multimodal_sage_db.h"
+#include "sage_vdb/multimodal_sage_vdb.h"
 
 // 1. 创建数据库
 DatabaseConfig config;
 config.dimension = 512;
 config.index_type = IndexType::FLAT;
 
-auto db = MultimodalSageDBFactory::create_text_image_db(config);
+auto db = MultimodalSageVDBFactory::create_text_image_db(config);
 
 // 2. 准备多模态数据
 Vector text_embedding = extract_text_features("Hello World");
@@ -133,8 +133,8 @@ export LD_LIBRARY_PATH=$PWD:$LD_LIBRARY_PATH
 
 ## 持久化与部署注意事项
 
-- `build.sh` 会在 `python/` 与 `install/` 目录下安装 `_sage_db*.so`，并生成 `*.ids` 与新的 `*.order` 映射文件，确保 FAISS 向量与自定义向量 ID 在重新加载后保持一致。
-- 如果需要完全清理构建产物，请同时删除 `build/`、`install/`、`python/_sage_db*.so` 以及对应的 `*.ids`、`*.order` 文件，避免旧的映射干扰新的部署。
+- `build.sh` 会在 `python/` 与 `install/` 目录下安装 `_sage_vdb*.so`，并生成 `*.ids` 与新的 `*.order` 映射文件，确保 FAISS 向量与自定义向量 ID 在重新加载后保持一致。
+- 如果需要完全清理构建产物，请同时删除 `build/`、`install/`、`python/_sage_vdb*.so` 以及对应的 `*.ids`、`*.order` 文件，避免旧的映射干扰新的部署。
 - 在 CI 环境中，如果只复制安装目录，务必包含 `*.order` 文件，否则 Python 侧的相似度查询会因为 ID 映射缺失而得到空结果。
 
 ## 架构设计
@@ -142,7 +142,7 @@ export LD_LIBRARY_PATH=$PWD:$LD_LIBRARY_PATH
 ### 核心组件
 
 ```
-MultimodalSageDB
+MultimodalSageVDB
 ├── ModalityManager          # 模态管理器
 │   └── ModalityProcessor[]  # 模态处理器集合
 ├── FusionEngine            # 融合引擎  
@@ -231,11 +231,11 @@ params.target_dimension = 512;  // 目标维度
 
 ```cpp
 try {
-    auto db = MultimodalSageDBFactory::create_text_image_db(config);
+    auto db = MultimodalSageVDBFactory::create_text_image_db(config);
     VectorId id = db->add_multimodal(data);
 } catch (const MultimodalException& e) {
     std::cerr << "多模态错误: " << e.what() << std::endl;
-} catch (const SageDBException& e) {
+} catch (const SageVDBException& e) {
     std::cerr << "数据库错误: " << e.what() << std::endl;
 }
 ```

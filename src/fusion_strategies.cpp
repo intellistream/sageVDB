@@ -1,10 +1,10 @@
-#include "sage_db/fusion_strategies.h"
+#include "sage_vdb/fusion_strategies.h"
 #include <algorithm>
 #include <random>
 #include <stdexcept>
 #include <limits>
 
-namespace sage_db {
+namespace sage_vdb {
 
 // ========== ConcatenationFusion 实现 ==========
 Vector ConcatenationFusion::fuse(const std::unordered_map<ModalityType, Vector>& modal_embeddings,
@@ -437,4 +437,4 @@ Vector random_projection(const Vector& vec, uint32_t target_dim, uint64_t seed) 
 
 } // namespace fusion_utils
 
-} // namespace sage_db
+} // namespace sage_vdb

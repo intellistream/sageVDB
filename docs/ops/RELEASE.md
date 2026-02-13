@@ -1,4 +1,4 @@
-# PyPI Release Guide for sageDB
+# PyPI Release Guide for SageVDB
 
 ## Quick Release Checklist
 

@@ -45,7 +45,26 @@ SageVDB is a C++20 library that provides efficient vector similarity search, met
 
 ## 🚀 Quick Start
 
-### Building
+### One-Command Setup (Recommended)
+
+```bash
+# Clone and setup in one go
+git clone https://github.com/intellistream/sageVDB.git
+cd sageVDB
+./quickstart.sh
+```
+
+The `quickstart.sh` script will:
+- ✓ Install git hooks (pre-commit, pre-push)
+- ✓ Check dependencies (CMake, C++ compiler, Python)
+- ✓ Optionally build the project
+- ✓ Optionally install Python package in development mode
+
+**What the git hooks do**:
+- `pre-commit`: Checks for trailing whitespace, large files, debug statements
+- `pre-push`: Manages version updates and PyPI publishing workflow
+
+### Manual Building
 
 ```bash
 cd sageVDB
@@ -60,10 +79,10 @@ BUILD_TYPE=Release ./build.sh
 SAGE_ENABLE_GPERFTOOLS=ON ./build.sh
 
 # The build produces:
-# - build/libsage_db.so         # Shared library
-# - build/test_sage_db          # Test executable
-# - install/lib/libsage_db.so   # Installed library
-# - install/include/sage_db/    # Public headers
+# - build/libsage_vdb.so         # Shared library
+# - build/test_sage_vdb          # Test executable
+# - install/lib/libsage_vdb.so   # Installed library
+# - install/include/sage_vdb/    # Public headers
 ```
 
 ### CMake Build Options
@@ -88,7 +107,7 @@ cd build
 ctest --verbose
 
 # Or run directly
-./test_sage_db
+./test_sage_vdb
 ./test_multimodal
 ```
 
@@ -97,9 +116,9 @@ ctest --verbose
 ### Basic Vector Search
 
 ```cpp
-#include <sage_db/sage_db.h>
+#include <sage_vdb/sage_vdb.h>
 
-using namespace sage_db;
+using namespace sage_vdb;
 
 int main() {
     // Create database configuration
@@ -109,7 +128,7 @@ int main() {
     config.anns_algorithm = "brute_force";
     
     // Initialize database
-    SageDB db(config);
+    SageVDB db(config);
     
     // Add vectors with metadata
     Vector vec1(128, 0.1f);
@@ -154,7 +173,7 @@ int main() {
 ### Using FAISS Plugin
 
 ```cpp
-#include <sage_db/sage_db.h>
+#include <sage_vdb/sage_vdb.h>
 
 int main() {
     DatabaseConfig config(768);
@@ -168,7 +187,7 @@ int main() {
     // FAISS-specific query parameters
     config.anns_query_params["nprobe"] = "8";
     
-    SageDB db(config);
+    SageVDB db(config);
     
     // Training data for IVF index
     std::vector<Vector> training_data;
@@ -192,16 +211,16 @@ int main() {
 ### Multimodal Database
 
 ```cpp
-#include <sage_db/multimodal_sage_db.h>
+#include <sage_vdb/multimodal_sage_vdb.h>
 
-using namespace sage_db;
+using namespace sage_vdb;
 
 int main() {
     // Configure multimodal database
     DatabaseConfig config;
     config.dimension = 0;  // Will be auto-calculated from modalities
     
-    MultimodalSageDB mdb(config);
+    MultimodalSageVDB mdb(config);
     
     // Register modality processors
     auto text_processor = std::make_shared<TextModalityProcessor>(768);
@@ -235,21 +254,21 @@ int main() {
 ### Persistence
 
 ```cpp
-#include <sage_db/sage_db.h>
+#include <sage_vdb/sage_vdb.h>
 
 int main() {
     DatabaseConfig config(128);
-    SageDB db(config);
+    SageVDB db(config);
     
     // Add data
     // ...
     
     // Save to disk
-    db.save("my_database.sagedb");
+    db.save("my_database.SageVDB");
     
     // Later, load from disk
-    SageDB db2(config);
-    db2.load("my_database.sagedb");
+    SageVDB db2(config);
+    db2.load("my_database.SageVDB");
     
     // Database is ready to use
     auto results = db2.search(query, 10);
@@ -265,7 +284,7 @@ int main() {
 1. **Implement the `ANNSAlgorithm` interface**:
 
 ```cpp
-#include <sage_db/anns/anns_interface.h>
+#include <sage_vdb/anns/anns_interface.h>
 
 class MyANNS : public ANNSAlgorithm {
 public:
@@ -358,13 +377,13 @@ DatabaseConfig config(128);
 config.anns_algorithm = "my_anns";
 config.anns_build_params["my_param"] = "100";
 
-SageDB db(config);
+SageVDB db(config);
 ```
 
 ### Custom Fusion Strategy
 
 ```cpp
-#include <sage_db/fusion_strategies.h>
+#include <sage_vdb/fusion_strategies.h>
 
 class MyFusionStrategy : public FusionStrategy {
 public:
@@ -389,7 +408,7 @@ multimodal_db.set_fusion_strategy_by_name("my_fusion");
 
 ### Core Classes
 
-#### `SageDB`
+#### `SageVDB`
 Main database class for vector operations.
 
 **Methods**:
@@ -407,7 +426,7 @@ Main database class for vector operations.
 - `size()` - Number of vectors
 - `dimension()` - Vector dimension
 
-#### `MultimodalSageDB`
+#### `MultimodalSageVDB`
 Extended database for multimodal data fusion.
 
 **Methods**:
@@ -467,11 +486,11 @@ struct SearchParams {
 ## 🏗️ Architecture
 
 ```
-sageDB/
-├── include/sage_db/          # Public headers
+SageVDB/
+├── include/sage_vdb/          # Public headers
 │   ├── common.h              # Common types and constants
-│   ├── sage_db.h             # Main database interface
-│   ├── multimodal_sage_db.h  # Multimodal extension
+│   ├── sage_vdb.h             # Main database interface
+│   ├── multimodal_sage_vdb.h  # Multimodal extension
 │   ├── vector_store.h        # Vector storage backend
 │   ├── metadata_store.h      # Metadata management
 │   ├── query_engine.h        # Search coordinator
@@ -482,18 +501,18 @@ sageDB/
 │       ├── brute_force_plugin.h
 │       └── faiss_plugin.h
 ├── src/                      # Implementation
-│   ├── sage_db.cpp
+│   ├── sage_vdb.cpp
 │   ├── vector_store.cpp
 │   ├── metadata_store.cpp
 │   ├── query_engine.cpp
-│   ├── multimodal_sage_db.cpp
+│   ├── multimodal_sage_vdb.cpp
 │   ├── fusion_strategies.cpp
 │   └── anns/
 │       ├── anns_interface.cpp
 │       ├── brute_force_plugin.cpp
 │       └── faiss_plugin.cpp
 ├── tests/                    # Unit tests
-│   ├── test_sage_db.cpp
+│   ├── test_sage_vdb.cpp
 │   └── test_multimodal.cpp
 ├── cmake/                    # CMake modules
 │   ├── FindBLASLAPACK.cmake
@@ -518,7 +537,7 @@ make test
 ctest -V
 
 # Run specific test
-./test_sage_db
+./test_sage_vdb
 ./test_multimodal
 ```
 
@@ -530,8 +549,8 @@ cmake -B build -DENABLE_GPERFTOOLS=ON
 cmake --build build
 
 # Run with profiler
-CPUPROFILE=sage_db.prof ./build/test_sage_db
-google-pprof --text ./build/test_sage_db sage_db.prof
+CPUPROFILE=sage_vdb.prof ./build/test_sage_vdb
+google-pprof --text ./build/test_sage_vdb sage_vdb.prof
 ```
 
 ### CI/CD
@@ -599,7 +618,7 @@ cmake -B build -DUSE_OPENMP=OFF
 
 ### Thread Safety Considerations
 
-SageDB is designed to be **service-friendly** and can seamlessly integrate with SAGE's multi-threaded service architecture:
+SageVDB is designed to be **service-friendly** and can seamlessly integrate with SAGE's multi-threaded service architecture:
 
 #### Current Thread Safety Status
 
@@ -609,14 +628,14 @@ SageDB is designed to be **service-friendly** and can seamlessly integrate with 
 std::vector<QueryResult> results = db.search(query, 10);  // Thread-safe
 ```
 
-#### Making SageDB Fully Thread-Safe
+#### Making SageVDB Fully Thread-Safe
 
-If you plan to upgrade SageDB to a fully multi-threaded engine, you have several options:
+If you plan to upgrade SageVDB to a fully multi-threaded engine, you have several options:
 
 **Option 1: Internal Locking (Recommended for Service Use)**
 
 ```cpp
-class SageDB {
+class SageVDB {
 private:
     mutable std::shared_mutex rw_mutex_;  // Reader-writer lock
     
@@ -650,7 +669,7 @@ private:
 **Option 3: Thread-Local Index Copies (Read-Heavy Workloads)**
 
 ```cpp
-class SageDB {
+class SageVDB {
 private:
     std::shared_ptr<const Index> shared_index_;  // Immutable index
     std::atomic<int> version_;
@@ -680,7 +699,7 @@ class ServiceManager:
     
     def call_sync(self, service_name, *args, **kwargs):
         # Each service call runs in isolated context
-        # Your multi-threaded SageDB is safe here!
+        # Your multi-threaded SageVDB is safe here!
         return service.method(*args, **kwargs)
     
     def call_async(self, service_name, *args, **kwargs):
@@ -691,22 +710,22 @@ class ServiceManager:
 
 #### Service Integration Example
 
-Even with a multi-threaded SageDB engine, the service wrapper remains simple:
+Even with a multi-threaded SageVDB engine, the service wrapper remains simple:
 
 ```python
-# packages/sage-middleware/.../sage_db_service.py
+# packages/sage-middleware/.../sage_vdb_service.py
 from threading import Lock
 
-class SageDBService:
-    """Thread-safe service wrapper for multi-threaded SageDB."""
+class SageVDBService:
+    """Thread-safe service wrapper for multi-threaded SageVDB."""
     
     def __init__(self, dimension: int = 768):
-        self._db = SageDB.from_config(DatabaseConfig(dimension))
+        self._db = SageVDB.from_config(DatabaseConfig(dimension))
         # Optional: Add Python-level locking if C++ doesn't provide it
         self._write_lock = Lock()
     
     def add(self, vector: np.ndarray, metadata: dict = None) -> int:
-        # Option A: If SageDB has internal locking, just call it
+        # Option A: If SageVDB has internal locking, just call it
         return self._db.add(vector, metadata or {})
         
         # Option B: If you need Python-level coordination
@@ -731,17 +750,17 @@ class VectorSearch(MapFunction):
     def execute(self, data):
         # Concurrent calls are safe!
         # SAGE's ServiceManager handles thread coordination
-        results = self.call_service("sage_db", data["query"], method="search", k=10)
+        results = self.call_service("sage_vdb", data["query"], method="search", k=10)
         
         # Or async for higher throughput
-        future = self.call_service_async("sage_db", data["query"], method="search", k=10)
+        future = self.call_service_async("sage_vdb", data["query"], method="search", k=10)
         results = future.result(timeout=5.0)
         
         return results
 
-# Register multi-threaded SageDB service
+# Register multi-threaded SageVDB service
 env = LocalEnvironment()
-env.register_service("sage_db", lambda: SageDBService(dimension=768))
+env.register_service("sage_vdb", lambda: SageVDBService(dimension=768))
 
 # Multiple concurrent requests work fine
 (
@@ -760,14 +779,14 @@ env.submit()
 // For SAGE service integration, prefer these patterns:
 
 // Pattern A: Reader-Writer Lock (balanced read/write)
-class SageDB {
+class SageVDB {
     mutable std::shared_mutex mutex_;
     // Readers don't block each other
     // Writers have exclusive access
 };
 
 // Pattern B: Partitioned Locking (high concurrency)
-class SageDB {
+class SageVDB {
     static constexpr size_t NUM_PARTITIONS = 16;
     std::array<std::mutex, NUM_PARTITIONS> partition_locks_;
     
@@ -777,7 +796,7 @@ class SageDB {
 };
 
 // Pattern C: Lock-Free (expert mode)
-class SageDB {
+class SageVDB {
     std::atomic<Index*> current_index_;
     // RCU-style updates
 };
@@ -789,8 +808,8 @@ class SageDB {
 // In Python bindings, release GIL for long operations
 #include <pybind11/pybind11.h>
 
-py::class_<SageDB>(m, "SageDB")
-    .def("search", [](const SageDB& db, const Vector& query, int k) {
+py::class_<SageVDB>(m, "SageVDB")
+    .def("search", [](const SageVDB& db, const Vector& query, int k) {
         // Release Python GIL during C++ computation
         py::gil_scoped_release release;
         auto results = db.search(query, k);
@@ -802,16 +821,16 @@ py::class_<SageDB>(m, "SageDB")
 #### 3. **Service-Level Connection Pooling**
 
 ```python
-class SageDBServicePool:
-    """Pool of SageDB instances for maximum concurrency."""
+class SageVDBServicePool:
+    """Pool of SageVDB instances for maximum concurrency."""
     
     def __init__(self, dimension: int, pool_size: int = 4):
-        self._pool = [SageDB(DatabaseConfig(dimension)) 
+        self._pool = [SageVDB(DatabaseConfig(dimension))
                       for _ in range(pool_size)]
         self._current = 0
         self._lock = threading.Lock()
     
-    def get_instance(self) -> SageDB:
+    def get_instance(self) -> SageVDB:
         with self._lock:
             idx = self._current
             self._current = (self._current + 1) % len(self._pool)
@@ -833,7 +852,7 @@ class SageDBServicePool:
 
 ### Migration Checklist
 
-If you're upgrading SageDB to multi-threaded:
+If you're upgrading SageVDB to multi-threaded:
 
 - [ ] Add `std::shared_mutex` or equivalent to core data structures
 - [ ] Protect index updates with exclusive locks
@@ -847,7 +866,7 @@ If you're upgrading SageDB to multi-threaded:
 ### Example: Thread-Safe Index Update
 
 ```cpp
-class SageDB {
+class SageVDB {
 private:
     mutable std::shared_mutex index_mutex_;
     std::unique_ptr<ANNSAlgorithm> index_;
@@ -876,7 +895,7 @@ public:
 
 ### Summary
 
-**Yes, SageDB can absolutely work as a SAGE service even when multi-threaded!**
+**Yes, SageVDB can absolutely work as a SAGE service even when multi-threaded!**
 
 ✅ **Why it works:**
 - SAGE's `ServiceManager` already handles concurrent service calls
@@ -885,7 +904,7 @@ public:
 - Service wrapper can add additional coordination if needed
 
 ✅ **Recommended approach:**
-1. Add internal locking to SageDB C++ code (reader-writer pattern)
+1. Add internal locking to SageVDB C++ code (reader-writer pattern)
 2. Release GIL in Python bindings for compute-intensive operations
 3. Keep service wrapper simple - let C++ handle thread safety
 4. Use `call_service_async` for high concurrency in pipelines
@@ -902,22 +921,37 @@ public:
 Python bindings are provided in `../python/` using pybind11:
 
 ```python
-import _sage_db
+import _sage_vdb
 
-config = _sage_db.DatabaseConfig(128)
-db = _sage_db.SageDB(config)
+config = _sage_vdb.DatabaseConfig(128)
+db = _sage_vdb.SageVDB(config)
 # ... use from Python ...
+```
+
+Use the optional `sage-anns` Python backend (no C++ rebuild required):
+
+```python
+from sagevdb import create_database
+
+db = create_database(
+    128,
+    backend="sage-anns",
+    algorithm="faiss_hnsw",
+    metric="l2",
+    M=32,
+    ef_construction=200,
+)
 ```
 
 See `../README.md` for Python API documentation.
 
 ### Shared Library
 
-Link against `libsage_db.so`:
+Link against `libsage_vdb.so`:
 
 ```cmake
-find_library(SAGE_DB_LIB sage_db HINTS ${SAGE_DB_ROOT}/lib)
-target_link_libraries(my_app ${SAGE_DB_LIB})
+find_library(sage_vdb_LIB sage_vdb HINTS ${sage_vdb_ROOT}/lib)
+target_link_libraries(my_app ${sage_vdb_LIB})
 ```
 
 ## 📚 Documentation
@@ -925,7 +959,7 @@ target_link_libraries(my_app ${SAGE_DB_LIB})
 - **[ANNS Plugin Guide](../docs/anns_plugin_guide.md)** - Detailed plugin development
 - **[Multimodal Design](../docs/multimodal_fusion_design.md)** - Architecture overview
 - **[Multimodal Features](docs/guides/README_Multimodal.md)** - Multimodal usage guide
-- **[Parent README](../README.md)** - SAGE DB middleware documentation
+- **[Parent README](../README.md)** - SageVDB middleware documentation
 
 ## 🤝 Contributing
 

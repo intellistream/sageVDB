@@ -25,7 +25,7 @@ endif()
 pybind11_add_module(_sagevdb bindings.cpp)
 
 # Link against SAGE VDB library
-target_link_libraries(_sagevdb PRIVATE sage_db)
+target_link_libraries(_sagevdb PRIVATE sage_vdb)
 
 # Include directories
 target_include_directories(_sagevdb PRIVATE
@@ -49,15 +49,15 @@ set_target_properties(_sagevdb PROPERTIES
 if(DEFINED SKBUILD)
     if(SKBUILD_STATE STREQUAL "editable")
         # Editable install: use parent-defined install dir if available, else fallback
-        if(DEFINED SAGE_DB_INSTALL_DIR)
-            set(_install_dest "${SAGE_DB_INSTALL_DIR}")
-            message(STATUS "sage_db: Using parent-defined install dir: ${_install_dest}")
+        if(DEFINED sage_vdb_INSTALL_DIR)
+            set(_install_dest "${sage_vdb_INSTALL_DIR}")
+            message(STATUS "sage_vdb: Using parent-defined install dir: ${_install_dest}")
         else()
-            set(_install_dest "${CMAKE_CURRENT_SOURCE_DIR}/../../python")
-            message(STATUS "sage_db: Using default editable install dir: ${_install_dest}")
+            set(_install_dest "${CMAKE_CURRENT_SOURCE_DIR}/../sagevdb")
+            message(STATUS "sage_vdb: Using default editable install dir: ${_install_dest}")
         endif()
         # Also install C++ libraries to same location
-        install(TARGETS sage_db
+        install(TARGETS sage_vdb
             LIBRARY DESTINATION ${_install_dest}
             ARCHIVE DESTINATION ${_install_dest}
             RUNTIME DESTINATION ${_install_dest}

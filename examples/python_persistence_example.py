@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SageDB Python Persistence Example
+SageVDB Python Persistence Example
 
 Demonstrates how to save and load vector databases in Python,
 including metadata persistence.
@@ -9,7 +9,7 @@ including metadata persistence.
 import numpy as np
 import os
 import tempfile
-from sagevdb import SageDB, DatabaseConfig, IndexType, DistanceMetric
+from sagevdb import SageVDB, DatabaseConfig, IndexType, DistanceMetric
 
 
 def basic_persistence_example():
@@ -23,7 +23,7 @@ def basic_persistence_example():
     config.index_type = IndexType.FLAT
     config.metric = DistanceMetric.L2
     
-    db = SageDB(config)
+    db = SageVDB(config)
     
     # Add vectors (use add_batch for multiple vectors)
     print("Adding 100 vectors...")
@@ -43,12 +43,12 @@ def basic_persistence_example():
     
     # Save to disk
     with tempfile.TemporaryDirectory() as tmpdir:
-        filepath = os.path.join(tmpdir, "my_database.sagedb")
+        filepath = os.path.join(tmpdir, "my_database.SageVDB")
         print(f"\nSaving database to: {filepath}")
         db.save(filepath)
         
         # Create new database and load
-        db2 = SageDB(config)
+        db2 = SageVDB(config)
         print(f"Loading database from: {filepath}")
         db2.load(filepath)
         
@@ -77,7 +77,7 @@ def metadata_persistence_example():
     config.index_type = IndexType.FLAT
     config.metric = DistanceMetric.COSINE
     
-    db = SageDB(config)
+    db = SageVDB(config)
     
     # Add vectors with metadata
     print("Adding 50 vectors with metadata...")
@@ -94,7 +94,7 @@ def metadata_persistence_example():
     
     # Save both database and metadata
     with tempfile.TemporaryDirectory() as tmpdir:
-        db_path = os.path.join(tmpdir, "db_with_meta.sagedb")
+        db_path = os.path.join(tmpdir, "db_with_meta.SageVDB")
         meta_path = os.path.join(tmpdir, "db_with_meta.meta")
         
         print(f"\nSaving database to: {db_path}")
@@ -103,7 +103,7 @@ def metadata_persistence_example():
         db.metadata_store().save(meta_path)
         
         # Load into new database
-        db2 = SageDB(config)
+        db2 = SageVDB(config)
         print(f"\nLoading database from: {db_path}")
         print(f"Loading metadata from: {meta_path}")
         db2.load(db_path)
@@ -131,10 +131,10 @@ def incremental_save_example():
     config.metric = DistanceMetric.L2
     
     with tempfile.TemporaryDirectory() as tmpdir:
-        filepath = os.path.join(tmpdir, "incremental.sagedb")
+        filepath = os.path.join(tmpdir, "incremental.SageVDB")
         
         # Initial save
-        db = SageDB(config)
+        db = SageVDB(config)
         vectors = [np.random.rand(32).astype(np.float32) for _ in range(50)]
         db.add_batch(vectors)
         db.build_index()
@@ -143,7 +143,7 @@ def incremental_save_example():
         db.save(filepath)
         
         # Load and add more vectors
-        db2 = SageDB(config)
+        db2 = SageVDB(config)
         db2.load(filepath)
         print(f"After load: {db2.size()} vectors")
         
@@ -155,7 +155,7 @@ def incremental_save_example():
         db2.save(filepath)
         
         # Load again to verify
-        db3 = SageDB(config)
+        db3 = SageVDB(config)
         db3.load(filepath)
         print(f"Final verification: {db3.size()} vectors")
         
@@ -173,7 +173,7 @@ def simple_example():
     config.index_type = IndexType.FLAT
     config.metric = DistanceMetric.L2
     
-    db = SageDB(config)
+    db = SageVDB(config)
     
     # Add some vectors
     vectors = [np.random.rand(128).astype(np.float32) for _ in range(100)]
@@ -181,14 +181,14 @@ def simple_example():
     db.build_index()
     
     with tempfile.TemporaryDirectory() as tmpdir:
-        path = os.path.join(tmpdir, "simple.sagedb")
+        path = os.path.join(tmpdir, "simple.SageVDB")
         
         # Save
         db.save(path)
         print(f"Saved {db.size()} vectors")
         
         # Load
-        db2 = SageDB(config)
+        db2 = SageVDB(config)
         db2.load(path)
         print(f"Loaded {db2.size()} vectors")
         

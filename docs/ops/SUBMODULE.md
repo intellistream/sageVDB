@@ -1,13 +1,13 @@
-# Git Submodule: sageDB
+# Git Submodule: SageVDB
 
 ⚠️ **This directory is a Git submodule** - it's a separate repository!
 
 ## Repository Information
 
-- **Name:** packages/sage-middleware/src/sage/middleware/components/sage_db/sageDB
-- **Repository:** https://github.com/intellistream/sageDB.git
+- **Name:** packages/sage-middleware/src/sage/middleware/components/sage_vdb/SageVDB
+- **Repository:** https://github.com/intellistream/SageVDB.git
 - **Branch:** main-dev
-- **Path:** `packages/sage-middleware/src/sage/middleware/components/sage_db/sageDB`
+- **Path:** `packages/sage-middleware/src/sage/middleware/components/sage_vdb/SageVDB`
 
 ## Quick Guide for Committing Changes
 
@@ -15,7 +15,7 @@
 
 ```bash
 # Navigate to this directory (if not already here)
-cd packages/sage-middleware/src/sage/middleware/components/sage_db/sageDB
+cd packages/sage-middleware/src/sage/middleware/components/sage_vdb/SageVDB
 
 # Make your changes, then:
 git add .
@@ -30,8 +30,8 @@ git push origin main-dev
 cd ../../../../../../../
 
 # Add the submodule reference update
-git add packages/sage-middleware/src/sage/middleware/components/sage_db/sageDB
-git commit -m "chore: update sageDB submodule reference"
+git add packages/sage-middleware/src/sage/middleware/components/sage_vdb/SageVDB
+git commit -m "chore: update SageVDB submodule reference"
 git push origin main-dev
 ```
 
@@ -41,13 +41,13 @@ To pull latest changes from the submodule repository:
 
 ```bash
 # In this directory
-cd packages/sage-middleware/src/sage/middleware/components/sage_db/sageDB
+cd packages/sage-middleware/src/sage/middleware/components/sage_vdb/SageVDB
 git pull origin main-dev
 
 # Update reference in main repo
 cd ../../../../../../../
-git add packages/sage-middleware/src/sage/middleware/components/sage_db/sageDB
-git commit -m "chore: update sageDB to latest"
+git add packages/sage-middleware/src/sage/middleware/components/sage_vdb/SageVDB
+git commit -m "chore: update SageVDB to latest"
 ```
 
 ## Common Issues
@@ -58,7 +58,7 @@ git commit -m "chore: update sageDB to latest"
 
 **Solution:**
 ```bash
-cd packages/sage-middleware/src/sage/middleware/components/sage_db/sageDB  # Enter the submodule first
+cd packages/sage-middleware/src/sage/middleware/components/sage_vdb/SageVDB  # Enter the submodule first
 git add .
 git commit -m "your message"
 ```
@@ -70,8 +70,8 @@ git commit -m "your message"
 **Solution:**
 ```bash
 cd ../../../../../../../  # Back to main repo
-git add packages/sage-middleware/src/sage/middleware/components/sage_db/sageDB
-git commit -m "chore: update sageDB reference"
+git add packages/sage-middleware/src/sage/middleware/components/sage_vdb/SageVDB
+git commit -m "chore: update SageVDB reference"
 ```
 
 ### ❌ "You are not currently on a branch"
@@ -80,7 +80,7 @@ git commit -m "chore: update sageDB reference"
 
 **Solution:**
 ```bash
-cd packages/sage-middleware/src/sage/middleware/components/sage_db/sageDB
+cd packages/sage-middleware/src/sage/middleware/components/sage_vdb/SageVDB
 git checkout main-dev
 git pull origin main-dev
 ```
