@@ -8,7 +8,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "isage-vdb"
-version = "0.1.8.1"
+version = "0.1.9"
 description = "High-Performance Vector Database with Pluggable ANNS Architecture"
 readme = "README.md"
 license = {text = "MIT"}

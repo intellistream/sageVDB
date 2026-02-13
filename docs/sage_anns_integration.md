@@ -14,9 +14,8 @@ This document describes the Python-level integration between **sageVDB** (vector
                │
                ├─── backend="cpp" (default)
                │    └──> C++ SageVDB core
-               │         ├─ brute_force
-               │         ├─ faiss (optional)
-               │         └─ other C++ ANNS
+               │         ├─ brute_force (baseline)
+               │         └─ faiss (optional)
                │
                └─── backend="sage-anns"
                     └──> Python SageANNSVectorStore

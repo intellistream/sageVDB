@@ -45,10 +45,9 @@ jobs:
             make \
             gcc_linux-64 \
             gxx_linux-64 \
-            pkg-config \
-            pytorch \
-            cpuonly \
-            -c pytorch
+            pkg-config
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev,sage-anns]"
 
       # Install additional C++ toolchain (Ubuntu)
       - name: Install C++ toolchain (Ubuntu)
@@ -70,33 +69,24 @@ jobs:
           cmake --version || true
           conda list | grep faiss || true
           conda list | grep openblas || true
-          conda list | grep pytorch || true
           echo "Python packages:"
-          python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CMake prefix: {torch.utils.cmake_prefix_path}')" || echo "PyTorch not properly installed"
 
       - name: Configure CMake
         shell: bash -el {0}
         run: |
-          # Set Torch CMake prefix path from Python
-          export TORCH_CMAKE_PREFIX=$(python -c "import torch; print(torch.utils.cmake_prefix_path)" 2>/dev/null || echo "")
-          echo "Torch CMake prefix: $TORCH_CMAKE_PREFIX"
-          
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DBUILD_TESTS=ON \
             -DBUILD_PYTHON_BINDINGS=OFF \
             -DENABLE_MULTIMODAL=ON \
-            -DENABLE_LIBAMM=ON \
-            -DLIBAMM_USE_URL_DOWNLOAD=ON \
             -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-            -DCMAKE_PREFIX_PATH="$CONDA_PREFIX;$TORCH_CMAKE_PREFIX" \
+            -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
             -DFAISS_ROOT="$CONDA_PREFIX"
 
       - name: Build
         shell: bash -el {0}
         run: |
           # Limit parallel jobs to avoid OOM on CI runners
-          # LibAMM is memory-intensive during compilation
           cmake --build build --config ${{ matrix.build_type }} --parallel 2
 
       - name: Set library path for tests
@@ -109,6 +99,11 @@ jobs:
         run: |
           cd build
           LD_LIBRARY_PATH=$PWD:$CONDA_PREFIX/lib ctest --output-on-failure --verbose
+
+      - name: Run Python tests
+        shell: bash -el {0}
+        run: |
+          python -m pytest -v tests
 
       - name: Run direct test executables (fallback)
         if: failure()

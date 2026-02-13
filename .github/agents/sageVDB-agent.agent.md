@@ -39,6 +39,6 @@ This agent assists with developing, testing, and maintaining the SageVDB C++ vec
 
 ## Output Style
 - Provide concrete code examples for ANNS registration patterns
-- Reference existing plugins (brute_force, faiss, vamana, song) as templates
+- Reference existing plugins (brute_force, faiss) as templates
 - Always validate dimension compatibility in multimodal fusion
 - Keep explanations concise with build/test commands ready to copy
