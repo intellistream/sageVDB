@@ -21,6 +21,7 @@ NC='\033[0m'
 WANT_PUBLISH=false
 REPO_DIR="$(pwd)"
 REPO_NAME="$(basename "$REPO_DIR")"
+PUBLISH_LOG="/tmp/${REPO_NAME}-publish-$$.log"
 
 # Safe read: falls back to default if /dev/tty is unavailable (SSH drop, IDE, etc.)
 safe_read() {
@@ -68,20 +69,58 @@ update_version() {
     return 0
 }
 
-# Print PyPI publish reminder (manual step after push)
-suggest_pypi_publish() {
+# Schedule PyPI publish to run AFTER push completes (background)
+schedule_post_push_publish() {
     local version="$1"
     local package="$2"
 
     if ! command -v sage-pypi-publisher &> /dev/null; then
-        echo -e "${YELLOW}⚠ sage-pypi-publisher not found${NC}"
+        echo -e "${YELLOW}⚠ sage-pypi-publisher not found, skipping auto-publish${NC}"
+        echo -e "${DIM}  Install: pip install isage-pypi-publisher${NC}"
         return
     fi
 
-    echo ""
-    echo -e "${GREEN}📦 To publish to PyPI, run after push succeeds:${NC}"
-    echo -e "${CYAN}   sage-pypi-publisher build . --upload --no-dry-run${NC}"
-    echo ""
+    echo -e "${GREEN}📦 PyPI publish scheduled (runs after push)${NC}"
+    echo -e "${DIM}  Log: tail -f ${PUBLISH_LOG}${NC}"
+
+    # Fork background job - waits for git push (parent of pre-push) to finish
+    (
+        GIT_PID="$PPID"
+        while kill -0 "$GIT_PID" 2>/dev/null; do
+            sleep 1
+        done
+        sleep 1
+
+        cd "$REPO_DIR" || exit 1
+
+        {
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "📦 Post-push: Building ${package} ${version}..."
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            rm -rf dist/ build/ *.egg-info 2>/dev/null || true
+
+            if sage-pypi-publisher build . --upload --no-dry-run; then
+                echo ""
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                echo "✓ Successfully uploaded ${package} ${version} to PyPI"
+                echo "🔗 https://pypi.org/project/${package}/${version}/"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            else
+                echo ""
+                echo "✗ Failed to upload to PyPI (exit code: $?)"
+                echo "  Re-run manually: sage-pypi-publisher build . --upload --no-dry-run"
+            fi
+        } >> "$PUBLISH_LOG" 2>&1
+
+        # Print summary to terminal (user sees it after push output)
+        if grep -q "Successfully uploaded" "$PUBLISH_LOG" 2>/dev/null; then
+            echo -e "\n${GREEN}✓ PyPI: ${package} ${version} published${NC}"
+        else
+            echo -e "\n${RED}✗ PyPI publish failed. See: ${PUBLISH_LOG}${NC}"
+        fi
+    ) &
+    disown
 }
 
 # --- Main Logic ---
@@ -238,10 +277,10 @@ else
     fi
 fi
 
-# Show PyPI publish instructions if requested
+# Schedule background publish if requested (runs AFTER push completes)
 if [ "$WANT_PUBLISH" = true ]; then
-    suggest_pypi_publish "$CURRENT_VERSION" "$PACKAGE_NAME"
+    schedule_post_push_publish "$CURRENT_VERSION" "$PACKAGE_NAME"
 fi
 
-# Exit 0 → push proceeds immediately, never blocked
+# Exit 0 → push proceeds immediately, never blocked by build/upload
 exit 0
