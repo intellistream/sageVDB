@@ -43,12 +43,12 @@ These guardrails keep completions consistent with the repo goal: FAISS-style API
 
 2. **Build and publish** using `sage-pypi-publisher`:
    ```bash
-   # Option 1: Automated (recommended)
-   sage-pypi-publisher publish  # Interactive: asks for version update and PyPI upload
+   # One-command workflow (recommended)
+   cd /path/to/sageVDB
+   sage-pypi-publisher publish . -r testpypi --no-dry-run  # Test first
+   sage-pypi-publisher publish . -r pypi --no-dry-run      # Production
    
-   # Option 2: Manual steps
-   sage-pypi-publisher build-manylinux     # Build wheels
-   sage-pypi-publisher upload wheelhouse/*.whl  # Upload to PyPI
+   # publish command auto-detects C++ extension and builds manylinux wheels
    ```
 
 3. **Git hook behavior**: The pre-push hook will:
@@ -57,7 +57,8 @@ These guardrails keep completions consistent with the repo goal: FAISS-style API
    - Choosing 'y' pushes to GitHub but does NOT publish to PyPI
 
 ### Notes
-- Use latest `isage-pypi-publisher` from `sage` conda env
+- Use latest `isage-pypi-publisher` from PyPI
 - PyPI token must be in `~/.pypirc`
+- `publish` command auto-detects package type (no need for --force-manylinux)
 - Push to GitHub and publish to PyPI are separate steps
 - See `docs/ops/RELEASE.md` and `docs/ops/DEPLOYMENT.md` for details
