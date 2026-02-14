@@ -25,7 +25,15 @@ if os.path.exists(os.path.join(_pkg_dir, "libsage_vdb.so")):
     # Development mode: add package directory to library search path
     if sys.platform == "linux" or sys.platform == "linux2":
         import ctypes
-        ctypes.CDLL(os.path.join(_pkg_dir, "libsage_vdb.so"), mode=ctypes.RTLD_GLOBAL)
+        try:
+            ctypes.CDLL(os.path.join(_pkg_dir, "libsage_vdb.so"), mode=ctypes.RTLD_GLOBAL)
+        except OSError as e:
+            if "libfaiss.so" in str(e):
+                raise ImportError(
+                    "Failed to load libsage_vdb.so: libfaiss.so not found. "
+                    "Please install faiss-cpu: pip install faiss-cpu"
+                ) from e
+            raise
 
 # Import the C++ extension module and expose all public classes
 try:

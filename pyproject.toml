@@ -8,7 +8,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "isage-vdb"
-version = "0.1.9"
+version = "0.1.10"
 description = "High-Performance Vector Database with Pluggable ANNS Architecture"
 readme = "README.md"
 license = {text = "MIT"}
@@ -34,6 +34,9 @@ classifiers = [
 requires-python = ">=3.8"
 dependencies = [
     "numpy>=1.19.0",
+    # FAISS is required because libsage_vdb.so is compiled with FAISS support
+    # The C++ extension dynamically loads libfaiss.so at runtime
+    "faiss-cpu>=1.7.0",
 ]
 
 [project.optional-dependencies]
@@ -43,12 +46,11 @@ dev = [
     "black",
     "isort",
 ]
-faiss = [
-    "faiss-cpu>=1.7.0",
-]
+# sage-anns provides additional ANNS algorithm implementations
 sage-anns = [
     "isage-anns>=0.1.3",
 ]
+# Publishing tools
 publish = [
     "isage-pypi-publisher"
 ]
