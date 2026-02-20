@@ -68,6 +68,10 @@ jobs:
       - name: Run Tests
         shell: bash -el {0}
         run: |
+          if [ ! -d build ]; then
+            echo "Error: build directory not found before tests."
+            exit 1
+          fi
           cd build
           LD_LIBRARY_PATH=$PWD:$CONDA_PREFIX/lib ctest --output-on-failure
 
@@ -75,6 +79,10 @@ jobs:
         shell: bash -el {0}
         run: |
           echo "Testing library dependencies..."
+          if [ ! -d build ]; then
+            echo "Error: build directory not found before library checks."
+            exit 1
+          fi
           cd build
           ldd libsage_vdb.so || true
           LD_LIBRARY_PATH=$PWD:$CONDA_PREFIX/lib ldd test_sage_vdb || true
