@@ -47,7 +47,8 @@ jobs:
             gxx_linux-64 \
             pkg-config
           python -m pip install --upgrade pip
-          python -m pip install ".[dev,sage-anns]"
+          # Editable install ensures the built extension is available under ./sagevdb for pytest
+          python -m pip install -e ".[dev,sage-anns]"
 
       # Install additional C++ toolchain (Ubuntu)
       - name: Install C++ toolchain (Ubuntu)
@@ -89,6 +90,16 @@ jobs:
           # Limit parallel jobs to avoid OOM on CI runners
           cmake --build build --config ${{ matrix.build_type }} --parallel 2
 
+      - name: Verify build directory
+        shell: bash -el {0}
+        run: |
+          if [ ! -d build ]; then
+            echo "Error: build directory not found after build step."
+            exit 1
+          fi
+          echo "Build directory contents:"
+          ls -la build
+
       - name: Set library path for tests
         shell: bash -el {0}
         run: |
@@ -97,6 +108,10 @@ jobs:
       - name: Run all tests
         shell: bash -el {0}
         run: |
+          if [ ! -d build ]; then
+            echo "Error: build directory not found before tests."
+            exit 1
+          fi
           cd build
           LD_LIBRARY_PATH=$PWD:$CONDA_PREFIX/lib ctest --output-on-failure --verbose
 
@@ -110,6 +125,10 @@ jobs:
         shell: bash -el {0}
         run: |
           echo "Running tests directly..."
+          if [ ! -d build ]; then
+            echo "Error: build directory not found; cannot run fallback tests."
+            exit 1
+          fi
           cd build
           if [ -f ./test_sage_vdb ]; then
             echo "Running test_sage_vdb..."
