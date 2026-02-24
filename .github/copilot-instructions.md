@@ -17,6 +17,7 @@ These guardrails keep completions consistent with the repo goal: FAISS-style API
 - Respect capabilities: if an algorithm cannot update/delete/range-search, throw `std::runtime_error` with the algorithm name (see `anns::ANNSAlgorithm` defaults).
 - Keep thread safety: `VectorStore` uses shared_mutex for read-heavy paths; do not expose raw internals that bypass locking.
 - Favor C++20 standard library; avoid introducing new deps unless aligned with cmake options (`ENABLE_FAISS`, `ENABLE_MULTIMODAL`, etc.).
+- Do not create new local virtual environments (`venv`/`.venv`); use the existing configured Python environment.
 - Keep code pluggable: new ANNS implementations live under `src/anns/` + public headers under `include/sage_vdb/anns/`; register via factory macro in a `.cpp` file only.
 
 ## Testing & Build
