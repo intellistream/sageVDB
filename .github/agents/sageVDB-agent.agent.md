@@ -43,3 +43,9 @@ This agent assists with developing, testing, and maintaining the SageVDB C++ vec
 - Reference existing plugins (brute_force, faiss) as templates
 - Always validate dimension compatibility in multimodal fusion
 - Keep explanations concise with build/test commands ready to copy
+
+## Polyrepo coordination rules
+
+- Treat this repository as the only local source tree; do not assume sibling repositories exist.
+- If a task spans multiple repositories, implement only this repo and explicitly list follow-up repo/version-bump actions.
+- Do not create `venv`/`.venv`; always use the existing configured Python environment.
