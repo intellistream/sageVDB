@@ -44,7 +44,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+full = []
 dev = [
+    "isage-vdb[full]",
     "pytest>=7.0.0",
     "pytest-cov",
     "black",
