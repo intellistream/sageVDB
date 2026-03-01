@@ -20,6 +20,7 @@ SageVDB is a C++20 library that provides efficient vector similarity search, met
 - **Pluggable Architecture**: Easy integration of new ANNS algorithms
 - **Algorithm Registry**: Dynamic registration and discovery
 - **Big-ANN Compatible**: Parameters follow [big-ann-benchmarks](https://github.com/erikbern/ann-benchmarks) conventions
+- **Fail-Fast Capability Boundary**: Unsupported operations throw explicit errors (no implicit fallback)
 - **Built-in Algorithms**:
   - `brute_force`: Exact search, supports incremental updates and deletions
   - `faiss`: FAISS integration (when available)
@@ -200,6 +201,9 @@ int main() {
     
     // Build index
     db.build_index();
+
+    // NOTE: capability mismatches fail fast.
+    // Example: calling remove/update on an algorithm without deletion support throws immediately.
     
     // Query
     auto results = db.search(query, 10);
@@ -497,9 +501,7 @@ SageVDB/
 │   ├── fusion_strategies.h   # Multimodal fusion
 │   ├── modality_processors.h # Modality handlers
 │   └── anns/                 # ANNS plugin system
-│       ├── anns_interface.h  # Plugin interface
-│       ├── brute_force_plugin.h
-│       └── faiss_plugin.h
+│       └── anns_interface.h  # Plugin interface
 ├── src/                      # Implementation
 │   ├── sage_vdb.cpp
 │   ├── vector_store.cpp
@@ -509,7 +511,10 @@ SageVDB/
 │   ├── fusion_strategies.cpp
 │   └── anns/
 │       ├── anns_interface.cpp
+│       ├── register_builtin_algorithms.cpp
+│       ├── brute_force_plugin.h
 │       ├── brute_force_plugin.cpp
+│       ├── faiss_plugin.h
 │       └── faiss_plugin.cpp
 ├── tests/                    # Unit tests
 │   ├── test_sage_vdb.cpp

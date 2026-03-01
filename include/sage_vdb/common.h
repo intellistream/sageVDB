@@ -67,7 +67,7 @@ struct DatabaseConfig {
     DistanceMetric metric = DistanceMetric::L2;
     Dimension dimension = 0;
 
-    // ANNS algorithm selection (default maps AUTO -> brute_force)
+    // ANNS algorithm selection (must match a registered ANNSRegistry factory)
     std::string anns_algorithm = "brute_force";
     std::unordered_map<std::string, std::string> anns_build_params;
     std::unordered_map<std::string, std::string> anns_query_params;

@@ -1,9 +1,5 @@
 #include "sage_vdb/vector_store.h"
 #include "sage_vdb/anns/anns_interface.h"
-#include "sage_vdb/anns/brute_force_plugin.h"
-#ifdef ENABLE_FAISS
-#include "sage_vdb/anns/faiss_plugin.h"
-#endif
 
 #include <algorithm>
 #include <chrono>
@@ -15,6 +11,10 @@
 #include <unordered_map>
 
 namespace sage_vdb {
+namespace anns {
+void register_builtin_algorithms();
+}
+
 namespace {
 constexpr uint32_t kVectorStoreFormatVersion = 1;
 }
@@ -30,6 +30,10 @@ public:
         VectorId id = next_id_++;
         dataset_.push_back({id, vector});
         id_to_index_[id] = dataset_.size() - 1;
+
+        if (index_built_ && !algorithm_->supports_updates()) {
+            throw std::runtime_error("Algorithm '" + algorithm_name_ + "' does not support incremental add");
+        }
 
         if (index_built_ && algorithm_->supports_updates()) {
             algorithm_->add_vector(dataset_.back());
@@ -52,6 +56,10 @@ public:
             dataset_.push_back({id, vec});
             id_to_index_[id] = dataset_.size() - 1;
             entries.emplace_back(id, vec);
+        }
+
+        if (index_built_ && !entries.empty() && !algorithm_->supports_updates()) {
+            throw std::runtime_error("Algorithm '" + algorithm_name_ + "' does not support incremental add");
         }
 
         if (index_built_ && !entries.empty() && algorithm_->supports_updates()) {
@@ -80,6 +88,10 @@ public:
         dataset_.pop_back();
         id_to_index_.erase(it);
 
+        if (index_built_ && !algorithm_->supports_deletions()) {
+            throw std::runtime_error("Algorithm '" + algorithm_name_ + "' does not support deletions");
+        }
+
         if (index_built_ && algorithm_->supports_deletions()) {
             algorithm_->remove_vector(id);
         } else {
@@ -95,6 +107,14 @@ public:
         }
 
         dataset_[it->second].second = vector;
+
+        if (index_built_ && !algorithm_->supports_updates()) {
+            throw std::runtime_error("Algorithm '" + algorithm_name_ + "' does not support updates");
+        }
+        if (index_built_ && !algorithm_->supports_deletions()) {
+            throw std::runtime_error(
+                "Algorithm '" + algorithm_name_ + "' does not support update because deletions are unsupported");
+        }
 
         if (index_built_ && algorithm_->supports_updates() && algorithm_->supports_deletions()) {
             algorithm_->remove_vector(id);
@@ -113,6 +133,10 @@ public:
         ensure_index_ready();
 
         auto query_config = create_query_config(params);
+
+        if (params.radius > 0.0f && !algorithm_->supports_range_search()) {
+            throw std::runtime_error("Algorithm '" + algorithm_name_ + "' does not support range queries");
+        }
 
         if (params.radius > 0.0f && algorithm_->supports_range_search()) {
             auto range_result = execute_range_query(query, params.radius, query_config);
@@ -290,9 +314,10 @@ private:
     }
 
     void initialize_algorithm() {
+        anns::register_builtin_algorithms();
         auto& registry = anns::ANNSRegistry::instance();
         if (!registry.is_available(algorithm_name_)) {
-            algorithm_name_ = "brute_force";
+            throw SageVDBException("Algorithm '" + algorithm_name_ + "' is not registered");
         }
 
         const auto* factory = registry.get_factory(algorithm_name_);

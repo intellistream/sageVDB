@@ -1,4 +1,4 @@
-#include "sage_vdb/anns/brute_force_plugin.h"
+#include "brute_force_plugin.h"
 #include <fstream>
 #include <algorithm>
 #include <cmath>

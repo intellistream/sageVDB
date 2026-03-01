@@ -1,4 +1,4 @@
-#include "sage_vdb/anns/faiss_plugin.h"
+#include "faiss_plugin.h"
 
 #include <algorithm>
 #include <chrono>
