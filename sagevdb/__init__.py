@@ -20,13 +20,17 @@ __email__ = "shuhao_zhang@hust.edu.cn"
 # Help locate libsage_vdb.so for development mode
 import os
 import sys
+
 _pkg_dir = os.path.dirname(os.path.abspath(__file__))
 if os.path.exists(os.path.join(_pkg_dir, "libsage_vdb.so")):
     # Development mode: add package directory to library search path
     if sys.platform == "linux" or sys.platform == "linux2":
         import ctypes
+
         try:
-            ctypes.CDLL(os.path.join(_pkg_dir, "libsage_vdb.so"), mode=ctypes.RTLD_GLOBAL)
+            ctypes.CDLL(
+                os.path.join(_pkg_dir, "libsage_vdb.so"), mode=ctypes.RTLD_GLOBAL
+            )
         except OSError as e:
             if "libfaiss.so" in str(e):
                 raise ImportError(
@@ -43,80 +47,68 @@ try:
         VectorStore,
         MetadataStore,
         QueryEngine,
-        
         # Configuration and parameters
         DatabaseConfig,
         SearchParams,
-        
         # Enums
         IndexType,
         DistanceMetric,
-        
         # Result types
         QueryResult,
         SearchStats,
-        
         # Factory functions
         create_database as create_cpp_database,
-        
         # Utility functions
         index_type_to_string,
         string_to_index_type,
         distance_metric_to_string,
         string_to_distance_metric,
-        
         # NumPy helpers
         add_numpy,
         search_numpy,
-        
         # Exception
         SageVDBException,
     )
-    
+
     __all__ = [
         # Main classes
-        'SageVDB',
-        'VectorStore',
-        'MetadataStore',
-        'QueryEngine',
-        
+        "SageVDB",
+        "VectorStore",
+        "MetadataStore",
+        "QueryEngine",
         # Configuration and parameters
-        'DatabaseConfig',
-        'SearchParams',
-        
+        "DatabaseConfig",
+        "SearchParams",
         # Enums
-        'IndexType',
-        'DistanceMetric',
-        
+        "IndexType",
+        "DistanceMetric",
         # Result types
-        'QueryResult',
-        'SearchStats',
-        
+        "QueryResult",
+        "SearchStats",
         # Factory functions
-        'create_cpp_database',
-        'create_database',
-        
+        "create_cpp_database",
+        "create_database",
         # Utility functions
-        'index_type_to_string',
-        'string_to_index_type',
-        'distance_metric_to_string',
-        'string_to_distance_metric',
-        
+        "index_type_to_string",
+        "string_to_index_type",
+        "distance_metric_to_string",
+        "string_to_distance_metric",
         # NumPy helpers
-        'add_numpy',
-        'search_numpy',
-        
+        "add_numpy",
+        "search_numpy",
         # Exception
-        'SageVDBException',
+        "SageVDBException",
     ]
 
     try:
         from .sage_anns import SageANNSVectorStore, list_sage_anns_algorithms
 
-        __all__.extend([
-            'SageANNSVectorStore',
-            'list_sage_anns_algorithms',
-        ])
+        __all__.extend(
+            [
+                "SageANNSVectorStore",
+                "list_sage_anns_algorithms",
+            ]
+        )
     except ImportError:
         SageANNSVectorStore = None
         list_sage_anns_algorithms = None
@@ -137,9 +129,7 @@ try:
             return create_cpp_database(*args, **kwargs)
 
         if backend_value not in ("sage-anns", "sageanns", "anns"):
-            raise ValueError(
-                "Unknown backend. Use 'cpp' or 'sage-anns'."
-            )
+            raise ValueError("Unknown backend. Use 'cpp' or 'sage-anns'.")
 
         if SageANNSVectorStore is None:
             raise ImportError(
@@ -151,7 +141,9 @@ try:
             config = args[0]
             algorithm = kwargs.pop("algorithm", config.anns_algorithm)
             if not algorithm:
-                raise ValueError("'algorithm' must be specified via DatabaseConfig.anns_algorithm or argument")
+                raise ValueError(
+                    "'algorithm' must be specified via DatabaseConfig.anns_algorithm or argument"
+                )
             params = dict(config.anns_build_params)
             params.update(kwargs)
             return SageANNSVectorStore(
@@ -175,14 +167,31 @@ try:
             )
 
         raise ValueError("Invalid arguments for create_database")
-    
+
 except ImportError as e:
     import warnings
+
     warnings.warn(
         f"Failed to import SageVDB native extension: {e}\n"
         "The package may not be properly installed. "
         "Try reinstalling with: pip install --force-reinstall SageVDB",
-        ImportWarning
+        ImportWarning,
     )
     # Provide empty stubs to prevent total failure
     __all__ = []
+
+# ---------------------------------------------------------------------------
+# Optional: register SageVDBBackend into sage.libs.vdb so that L4 packages
+# (e.g. isage-neuromem) can obtain a backend via:
+#     from sage.libs.vdb import create_backend
+#     backend = create_backend("sagedb", config)
+# This is a soft dependency — if isage-libs is not installed, we silently
+# skip the registration (the adapter is simply unavailable).
+# ---------------------------------------------------------------------------
+try:
+    from sagevdb._vdb_backend import SageVDBBackend  # noqa: F401 — side-effect registration
+
+    __all__.append("SageVDBBackend")
+except ImportError:
+    # isage-libs not installed — VDBBackend registration skipped
+    SageVDBBackend = None  # type: ignore[assignment]
