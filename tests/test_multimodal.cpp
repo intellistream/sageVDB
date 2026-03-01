@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <numeric>
+#include <algorithm>
 
 using namespace sage_vdb;
 
@@ -198,8 +199,120 @@ void test_custom_strategy() {
     
     VectorId id = db.add_multimodal(modalities);
     assert(id > 0);
+
+    auto supported = db.get_supported_fusion_strategies();
+    assert(std::find(supported.begin(), supported.end(), FusionStrategy::CUSTOM) != supported.end());
     
     std::cout << "✓ 自定义融合策略测试通过" << std::endl;
+}
+
+// 测试多模态接口合同（边界行为与默认策略）
+void test_multimodal_interface_contracts() {
+    std::cout << "测试多模态接口合同..." << std::endl;
+
+    DatabaseConfig config;
+    config.dimension = 8;
+    config.index_type = IndexType::FLAT;
+
+    MultimodalConfig multimodal_config;
+    multimodal_config.base_config = config;
+    multimodal_config.max_modalities_per_item = 2;
+    multimodal_config.default_fusion_params.strategy = FusionStrategy::CONCATENATION;
+    multimodal_config.default_fusion_params.target_dimension = config.dimension;
+
+    MultimodalSageVDB db(multimodal_config);
+
+    auto supported = db.get_supported_fusion_strategies();
+    assert(std::find(supported.begin(), supported.end(), FusionStrategy::CONCATENATION) != supported.end());
+    assert(std::find(supported.begin(), supported.end(), FusionStrategy::WEIGHTED_AVERAGE) != supported.end());
+    assert(std::find(supported.begin(), supported.end(), FusionStrategy::ATTENTION_BASED) != supported.end());
+    assert(std::find(supported.begin(), supported.end(), FusionStrategy::TENSOR_FUSION) != supported.end());
+
+    FusionParams params;
+    params.strategy = FusionStrategy::WEIGHTED_AVERAGE;
+    params.target_dimension = config.dimension;
+    params.modality_weights[ModalityType::TEXT] = 0.7f;
+    params.modality_weights[ModalityType::IMAGE] = 0.3f;
+    db.update_fusion_params(params);
+
+    const auto& actual = db.get_fusion_params();
+    assert(actual.strategy == FusionStrategy::WEIGHTED_AVERAGE);
+    assert(actual.target_dimension == config.dimension);
+
+    bool caught_empty = false;
+    try {
+        std::unordered_map<ModalityType, ModalData> empty_modalities;
+        db.add_multimodal(empty_modalities);
+    } catch (const MultimodalException&) {
+        caught_empty = true;
+    }
+    assert(caught_empty);
+
+    bool caught_overflow = false;
+    try {
+        std::unordered_map<ModalityType, ModalData> overflow_modalities;
+        overflow_modalities[ModalityType::TEXT] = ModalData(ModalityType::TEXT, Vector{1, 1, 1, 1});
+        overflow_modalities[ModalityType::IMAGE] = ModalData(ModalityType::IMAGE, Vector{1, 1, 1, 1});
+        overflow_modalities[ModalityType::AUDIO] = ModalData(ModalityType::AUDIO, Vector{1, 1, 1, 1});
+        db.add_multimodal(overflow_modalities);
+    } catch (const MultimodalException&) {
+        caught_overflow = true;
+    }
+    assert(caught_overflow);
+
+    std::cout << "✓ 多模态接口合同测试通过" << std::endl;
+}
+
+// 测试多模态搜索合同（参数与返回边界）
+void test_multimodal_search_contract() {
+    std::cout << "测试多模态搜索合同..." << std::endl;
+
+    DatabaseConfig config;
+    config.dimension = 8;
+    config.index_type = IndexType::FLAT;
+
+    MultimodalConfig multimodal_config;
+    multimodal_config.base_config = config;
+    multimodal_config.default_fusion_params.strategy = FusionStrategy::CONCATENATION;
+    multimodal_config.default_fusion_params.target_dimension = config.dimension;
+    multimodal_config.max_modalities_per_item = 3;
+
+    MultimodalSageVDB db(multimodal_config);
+
+    std::unordered_map<ModalityType, ModalData> item1;
+    item1[ModalityType::TEXT] = ModalData(ModalityType::TEXT, Vector{1, 1, 1, 1});
+    item1[ModalityType::IMAGE] = ModalData(ModalityType::IMAGE, Vector{0, 0, 0, 0});
+
+    std::unordered_map<ModalityType, ModalData> item2;
+    item2[ModalityType::TEXT] = ModalData(ModalityType::TEXT, Vector{0, 0, 0, 0});
+    item2[ModalityType::IMAGE] = ModalData(ModalityType::IMAGE, Vector{1, 1, 1, 1});
+
+    VectorId id1 = db.add_multimodal(item1, Metadata{{"label", "item1"}});
+    VectorId id2 = db.add_multimodal(item2, Metadata{{"label", "item2"}});
+    assert(id1 > 0);
+    assert(id2 > 0);
+
+    db.build_index();
+
+    std::unordered_map<ModalityType, ModalData> query;
+    query[ModalityType::TEXT] = ModalData(ModalityType::TEXT, Vector{1, 1, 1, 1});
+    query[ModalityType::IMAGE] = ModalData(ModalityType::IMAGE, Vector{0, 0, 0, 0});
+
+    MultimodalSearchParams search_params;
+    search_params.k = 1;
+    search_params.include_metadata = true;
+    search_params.query_fusion_params.strategy = FusionStrategy::WEIGHTED_AVERAGE;
+    search_params.query_fusion_params.target_dimension = config.dimension;
+    search_params.query_fusion_params.modality_weights[ModalityType::TEXT] = 1.0f;
+    search_params.query_fusion_params.modality_weights[ModalityType::IMAGE] = 0.0f;
+
+    auto results = db.search_multimodal(query, search_params);
+    assert(results.size() <= search_params.k);
+    if (!results.empty()) {
+        assert(results[0].metadata.find("label") != results[0].metadata.end());
+    }
+
+    std::cout << "✓ 多模态搜索合同测试通过" << std::endl;
 }
 
 int main() {
@@ -211,6 +324,8 @@ int main() {
         test_fusion_utils();
         test_factory();
         test_custom_strategy();
+        test_multimodal_interface_contracts();
+        test_multimodal_search_contract();
         
         std::cout << "\n✅ 所有单元测试通过！" << std::endl;
         

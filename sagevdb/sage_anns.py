@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable, List, Optional, Sequence, Tuple
+from typing import Iterable, List, Optional, Sequence
 
 import numpy as np
 
@@ -126,7 +126,9 @@ class SageANNSVectorStore:
     ) -> List[List[QueryResult]]:
         batch = _ensure_2d_float32(queries, self._dimension, "queries")
         distances, indices = self._index.search(batch, k=k, **search_params)
-        return _to_query_results(distances, indices, self._metadata_store, include_metadata)
+        return _to_query_results(
+            distances, indices, self._metadata_store, include_metadata
+        )
 
     def save(self, path: str) -> None:
         self._index.save(path)
