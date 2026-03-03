@@ -48,8 +48,9 @@ jobs:
             pkg-config
           python -m pip install --upgrade pip
           # Editable install ensures the built extension is available under ./sagevdb for pytest.
-          # Keep dependency resolution explicit in this step to avoid optional-extras chain failures.
-          python -m pip install -e ".[dev]"
+          # Avoid CI fragility from unpublished optional integration dependencies.
+          python -m pip install pytest pytest-cov black isort
+          python -m pip install -e . --no-deps
 
       # Install additional C++ toolchain (Ubuntu)
       - name: Install C++ toolchain (Ubuntu)

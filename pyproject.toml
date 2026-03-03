@@ -39,14 +39,17 @@ dependencies = [
     "faiss-cpu>=1.7.0",
     # ANNS algorithm implementations
     "isage-anns>=0.1.0",
-    # Optional VDBBackend registration for SAGE L3 interface layer
-    "isage-libs>=0.2.4.29",
 ]
 
 [project.optional-dependencies]
-full = []
+capability-sage-libs = [
+    # Optional VDBBackend registration for SAGE L3 interface layer
+    "isage-libs>=0.2.4.29",
+]
+full = [
+    "isage-vdb[capability-sage-libs]",
+]
 dev = [
-    "isage-vdb[full]",
     "pytest>=7.0.0",
     "pytest-cov",
     "black",
