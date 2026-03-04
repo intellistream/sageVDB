@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core>=0.8.0", "pybind11>=2.11.0", "cmake>=3.15"]
+requires = ["scikit-build-core>=0.8.0", "pybind11>=2.11.0"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -71,7 +71,7 @@ cmake.args = [
     "-DENABLE_MULTIMODAL=ON",
     "-DBUILD_PYTHON_BINDINGS=ON",
 ]
-cmake.verbose = true
+build.verbose = true
 # Build directory
 build-dir = "build/{wheel_tag}"
 # Install directory - the Python module will be installed here
