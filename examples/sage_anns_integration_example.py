@@ -9,12 +9,14 @@ as a backend for sageVDB through Python-level integration.
 import numpy as np
 from sagevdb import create_database, DatabaseConfig, DistanceMetric
 
+
 def main():
     print("=== SageVDB + sage-anns Integration Example ===\n")
 
     # Check available sage-anns algorithms
     try:
         from sagevdb import list_sage_anns_algorithms
+
         algorithms = list_sage_anns_algorithms()
         print(f"Available sage-anns algorithms: {algorithms}")
 
@@ -49,17 +51,22 @@ def main():
     results = db1.search(query, k=5, include_metadata=True)
 
     print(f"Added {len(vectors)} vectors")
-    print(f"Search results (top 5):")
+    print("Search results (top 5):")
     for i, result in enumerate(results[:5]):
-        print(f"  {i+1}. ID={result.id}, Distance={result.score:.4f}, "
-              f"Metadata={result.metadata}")
+        print(
+            f"  {i + 1}. ID={result.id}, Distance={result.score:.4f}, "
+            f"Metadata={result.metadata}"
+        )
 
     # Method 2: Use DatabaseConfig
     print("\n--- Method 2: Using DatabaseConfig ---")
     config = DatabaseConfig(dimension)
     config.metric = DistanceMetric.L2
     config.anns_algorithm = algorithms[0]
-    config.anns_build_params = {"M": "32", "ef_construction": "200"}  # HNSW params as example
+    config.anns_build_params = {
+        "M": "32",
+        "ef_construction": "200",
+    }  # HNSW params as example
 
     db2 = create_database(config, backend="sage-anns")
 
@@ -79,7 +86,7 @@ def main():
 
     print(f"Batch search for {len(queries)} queries:")
     for i, results in enumerate(batch_results):
-        print(f"  Query {i+1}: Found {len(results)} results")
+        print(f"  Query {i + 1}: Found {len(results)} results")
 
     print("\n=== Integration successful! ===")
 

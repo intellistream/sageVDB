@@ -4,7 +4,7 @@
 import numpy as np
 import pytest
 
-from sagevdb import create_database, DatabaseConfig, list_sage_anns_algorithms
+from sagevdb import create_database, DatabaseConfig
 
 sage_anns = pytest.importorskip("sage_anns")
 
@@ -49,6 +49,7 @@ class _DummyIndex:
 
 def _ensure_algorithm() -> str:
     from sage_anns import list_algorithms, register_algorithm
+
     algorithms = list_algorithms()
     if algorithms:
         return algorithms[0]

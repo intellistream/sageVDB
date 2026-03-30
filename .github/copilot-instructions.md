@@ -17,6 +17,7 @@ These guardrails keep completions consistent with the repo goal: FAISS-style API
 - Respect capabilities: if an algorithm cannot update/delete/range-search, throw `std::runtime_error` with the algorithm name (see `anns::ANNSAlgorithm` defaults).
 - Keep thread safety: `VectorStore` uses shared_mutex for read-heavy paths; do not expose raw internals that bypass locking.
 - Favor C++20 standard library; avoid introducing new deps unless aligned with cmake options (`ENABLE_FAISS`, `ENABLE_MULTIMODAL`, etc.).
+- Do not create new local virtual environments (`venv`/`.venv`); use the existing configured Python environment.
 - Keep code pluggable: new ANNS implementations live under `src/anns/` + public headers under `include/sage_vdb/anns/`; register via factory macro in a `.cpp` file only.
 
 ## Testing & Build
@@ -43,12 +44,12 @@ These guardrails keep completions consistent with the repo goal: FAISS-style API
 
 2. **Build and publish** using `sage-pypi-publisher`:
    ```bash
-   # Option 1: Automated (recommended)
-   sage-pypi-publisher publish  # Interactive: asks for version update and PyPI upload
+   # One-command workflow (recommended)
+   cd /path/to/sageVDB
+   sage-pypi-publisher publish . -r testpypi --no-dry-run  # Test first
+   sage-pypi-publisher publish . -r pypi --no-dry-run      # Production
    
-   # Option 2: Manual steps
-   sage-pypi-publisher build-manylinux     # Build wheels
-   sage-pypi-publisher upload wheelhouse/*.whl  # Upload to PyPI
+   # publish command auto-detects C++ extension and builds manylinux wheels
    ```
 
 3. **Git hook behavior**: The pre-push hook will:
@@ -57,7 +58,22 @@ These guardrails keep completions consistent with the repo goal: FAISS-style API
    - Choosing 'y' pushes to GitHub but does NOT publish to PyPI
 
 ### Notes
-- Use latest `isage-pypi-publisher` from `sage` conda env
+- Use latest `isage-pypi-publisher` from PyPI
 - PyPI token must be in `~/.pypirc`
+- `publish` command auto-detects package type (no need for --force-manylinux)
 - Push to GitHub and publish to PyPI are separate steps
 - See `docs/ops/RELEASE.md` and `docs/ops/DEPLOYMENT.md` for details
+
+## Polyrepo coordination (mandatory)
+
+- This repository is an independent SAGE sub-repository and is developed/released independently.
+- Do not assume sibling source directories exist locally in `intellistream/SAGE`.
+- For cross-repo rollout, publish this repo/package first, then bump the version pin in `SAGE/packages/sage/pyproject.toml` when applicable.
+- Do not add local editable installs of other SAGE sub-packages in setup scripts or docs.
+
+## 🚫 NEVER_CREATE_DOT_VENV_MANDATORY
+
+- 永远不要创建 `.venv` 或 `venv`（无任何例外）。
+- NEVER create `.venv`/`venv` in this repository under any circumstance.
+- 必须复用当前已配置的非-venv Python 环境（如现有 conda 环境）。
+- If any script/task suggests creating a virtualenv, skip that step and continue with the existing environment.

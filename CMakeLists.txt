@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.15)
 project(sage_vdb VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -71,6 +71,7 @@ set(sage_vdb_SOURCES
     src/metadata_store.cpp
     src/query_engine.cpp
     src/anns/anns_interface.cpp
+    src/anns/register_builtin_algorithms.cpp
     src/anns/brute_force_plugin.cpp
 )
 
@@ -81,13 +82,11 @@ set(sage_vdb_HEADERS
     include/sage_vdb/query_engine.h
     include/sage_vdb/common.h
     include/sage_vdb/anns/anns_interface.h
-    include/sage_vdb/anns/brute_force_plugin.h
 )
 
 
 if(FAISS_FOUND)
     list(APPEND sage_vdb_SOURCES src/anns/faiss_plugin.cpp)
-    list(APPEND sage_vdb_HEADERS include/sage_vdb/anns/faiss_plugin.h)
 endif()
 
 # Multimodal fusion sources and headers
