@@ -42,15 +42,15 @@ These guardrails keep completions consistent with the repo goal: FAISS-style API
    - New features: increment minor (0.1.5 → 0.2.0)
    - Breaking changes: increment major (0.1.5 → 1.0.0)
 
-2. **Build and publish** using `wheelwright`:
+2. **Build and publish** using `sagepypi`:
    ```bash
    # Install from the IntelliStream repository
-   python -m pip install "wheelwright @ git+https://github.com/intellistream/wheelwright.git@main"
+   python -m pip install "sagepypi @ git+https://github.com/intellistream/sagepypi.git@main"
 
    # One-command workflow (recommended)
    cd /path/to/sageVDB
-   wheelwright build . --upload -r testpypi --no-dry-run  # Test first
-   wheelwright build . --upload -r pypi --no-dry-run      # Production
+   sagepypi build . --upload -r testpypi --no-dry-run  # Test first
+   sagepypi build . --upload -r pypi --no-dry-run      # Production
    
    # build command auto-detects C++ extension packages and applies the manylinux flow
    ```
@@ -61,7 +61,7 @@ These guardrails keep completions consistent with the repo goal: FAISS-style API
    - Choosing 'y' pushes to GitHub but does NOT publish to PyPI
 
 ### Notes
-- Install `wheelwright` from `intellistream/wheelwright`
+- Install `sagepypi` from `intellistream/sagepypi`
 - PyPI token must be in `~/.pypirc`
 - `build` auto-detects package type (no need for a separate publish subcommand)
 - Push to GitHub and publish to PyPI are separate steps

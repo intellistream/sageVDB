@@ -56,7 +56,7 @@ dev = [
     "pytest-cov",
     "black",
     "isort",
-    "wheelwright @ git+https://github.com/intellistream/wheelwright.git@main",
+    "sagepypi @ git+https://github.com/intellistream/sagepypi.git@main",
 ]
 
 [project.urls]
