@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the Python-level integration between **sageVDB** (vector database) and **sage-anns** (ANNS algorithms library).
+This document describes the current Python adapter integration between **sageVDB** (vector database) and **sage-anns** (ANN algorithms library). Today, `sage-anns` is not a native sageVDB C++ plugin: sageVDB's native core uses its own `ANNSRegistry` boundary, while `backend="sage-anns"` selects a separate Python adapter path.
 
 ## Architecture
 
@@ -13,20 +13,25 @@ This document describes the Python-level integration between **sageVDB** (vector
 └──────────────┬──────────────────────────┘
                │
                ├─── backend="cpp" (default)
-               │    └──> C++ SageVDB core
+               │    └──> C++ SageVDB core via ANNSRegistry
                │         ├─ brute_force (baseline)
                │         └─ faiss (optional)
                │
                └─── backend="sage-anns"
-                    └──> Python SageANNSVectorStore
+                  └──> Python adapter backend (SageANNSVectorStore)
                          └──> sage-anns library
-                              ├─ FAISS HNSW
+                        ├─ FAISS / FAISS HNSW
                               ├─ VSAG HNSW
                               ├─ GTI
                               ├─ PLSH
-                              ├─ DiskANN
-                              └─ CANDY (various)
+                        └─ other wrappers exposed by the installed sage-anns package
 ```
+
+   ## Boundary Today
+
+   - The native sageVDB plugin system is the C++ `ANNSRegistry` path used by `VectorStore`.
+   - The `backend="sage-anns"` route bypasses that native registry and instantiates `SageANNSVectorStore` in Python.
+   - This means `sage-anns` currently behaves as an optional algorithm provider consumed through a Python adapter, not as a native registered C++ plugin.
 
 ## Design Rationale
 
@@ -39,8 +44,8 @@ This document describes the Python-level integration between **sageVDB** (vector
 
 ### When to use which backend?
 
-- **C++ backend** (`backend="cpp"`): Default, production-ready, performance-critical applications
-- **sage-anns backend** (`backend="sage-anns"`): New algorithms, prototyping, algorithm comparison
+- **C++ backend** (`backend="cpp"`): Default native core, production-ready, performance-critical applications
+- **sage-anns backend** (`backend="sage-anns"`): Optional Python adapter for prototyping, evaluation, and wider algorithm access without rebuilding the C++ core
 
 ## Installation
 
@@ -115,10 +120,12 @@ The `sage-anns` backend provides a subset of the full SageVDB API:
 | `add_batch()` | ✅ | Batch insertion |
 | `search()` | ✅ | k-NN search |
 | `batch_search()` | ✅ | Batch queries |
-| Metadata | ✅ | Via MetadataStore |
-| `save()`/`load()` | ✅ | If algorithm supports |
+| Metadata | ✅ | In-memory only via SageVDB's `MetadataStore` adapter wrapper; adapter normalizes metadata keys and values to strings before storing them |
+| `save()`/`load()` | ✅ | Delegates to the external ANN index only; metadata and local ID state are not fully persisted by the adapter |
+| `anns_query_params` from `DatabaseConfig` | ❌ | Not auto-forwarded into search calls; pass keyword args to `search()` / `batch_search()` directly |
 | `remove()` | ❌ | Not yet implemented |
 | `update()` | ❌ | Not yet implemented |
+| `size()` / native object graph accessors | ❌ | The adapter exposes `dimension`, `metric`, and `algorithm`, but not the native `SageVDB` introspection surface |
 
 ## Implementation Details
 
@@ -127,7 +134,7 @@ The `sage-anns` backend provides a subset of the full SageVDB API:
 1. **`SageANNSVectorStore`** (`sagevdb/sage_anns.py`): Python adapter class
    - Wraps `sage_anns.create_index()`
    - Manages metadata via `MetadataStore`
-   - Translates sageVDB API to sage-anns API
+   - Translates a VectorStore-like subset of the sageVDB API to the sage-anns API
 
 2. **`create_database()` factory** (`sagevdb/__init__.py`): Backend router
    - `backend="cpp"` → C++ `SageVDB`
@@ -136,18 +143,25 @@ The `sage-anns` backend provides a subset of the full SageVDB API:
 3. **Python bindings update** (`python/bindings.cpp`): Exposed config params
    - `DatabaseConfig.anns_algorithm`
    - `DatabaseConfig.anns_build_params`
-   - `DatabaseConfig.anns_query_params`
+   - Native backend also exposes `DatabaseConfig.anns_query_params`, but the current sage-anns adapter does not consume them automatically
+
+The important boundary is that this routing happens in the Python factory and adapter layer, not in `VectorStore`'s native plugin loading path.
 
 ### Parameter Mapping
 
-FAISS-style parameters in `DatabaseConfig` map to sage-anns:
+The current adapter maps `DatabaseConfig` to sage-anns like this:
 
 ```python
 config.anns_algorithm        → algorithm name
 config.anns_build_params     → index construction params
-config.anns_query_params     → search-time params
 config.metric                → distance metric
 ```
+
+`config.anns_query_params` are part of the native SageVDB configuration surface, but they are not automatically forwarded by the current Python adapter. For search-time controls on the adapter path, pass keyword arguments directly to `search()` or `batch_search()`.
+
+Metadata on the adapter path is stored through SageVDB's `MetadataStore`, which currently exposes a string-based mapping contract in Python. The `sage-anns` adapter therefore normalizes metadata keys and values to strings during `build_index()`, `add()`, `add_batch()`, and metadata restore during `load()`. If you pass integers, booleans, or other scalar values, expect them to be returned as strings in query results.
+
+The adapter also does not expose the native `SageVDB.size()`, `vector_store()`, `query_engine()`, or `metadata_store()` accessors. Examples that need a vector count should track inserted items explicitly instead of reading `dimension`.
 
 ## Testing
 
@@ -166,7 +180,7 @@ LD_LIBRARY_PATH=/path/to/sagevdb/sagevdb:$LD_LIBRARY_PATH pytest tests/test_sage
 - Add more tests for different algorithms
 
 ### Long-term (optional)
-- C++ adapter for sage-anns (deeper integration)
+- Native C++ adapter for sage-anns through SageVDB's ANNSRegistry boundary
 - Unified configuration schema
 - Performance benchmarking suite
 

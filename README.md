@@ -1,8 +1,8 @@
 # SageVDB C++ Core Library
 
-**High-Performance Vector Database with Pluggable ANNS Architecture**
+**High-Performance Vector Database with Pluggable Native ANNS Architecture**
 
-SageVDB is a C++20 library that provides efficient vector similarity search, metadata management, and a flexible plugin system for Approximate Nearest Neighbor Search (ANNS) algorithms. It serves as the native core for the SAGE VDB middleware component.
+SageVDB is a C++20 library that provides efficient vector similarity search, metadata management, and a flexible native plugin system for Approximate Nearest Neighbor Search (ANNS) algorithms. It serves as the native core for the SAGE VDB middleware component.
 
 > Usage Mode Guide: Please refer to `docs/USAGE_MODES.md` (for the positioning, data flow, and examples of Standalone / BYO-Embedding / Plugin / Service).
 
@@ -17,6 +17,7 @@ SageVDB is a C++20 library that provides efficient vector similarity search, met
 - **Thread-Safe**: Concurrent read operations supported
 
 ### ANNS Plugin System
+- This section describes the native C++ plugin boundary only.
 - **Pluggable Architecture**: Easy integration of new ANNS algorithms
 - **Algorithm Registry**: Dynamic registration and discovery
 - **Big-ANN Compatible**: Parameters follow [big-ann-benchmarks](https://github.com/erikbern/ann-benchmarks) conventions
@@ -24,6 +25,8 @@ SageVDB is a C++20 library that provides efficient vector similarity search, met
 - **Built-in Algorithms**:
   - `brute_force`: Exact search, supports incremental updates and deletions
   - `faiss`: FAISS integration (when available)
+
+Boundary note: the optional `backend="sage-anns"` Python path is a separate adapter integration and does not register algorithms into the native C++ `ANNSRegistry`.
 
 ### Multimodal Support
 - **Cross-Modal Fusion**: Combine features from text, images, audio, video, etc.
@@ -500,7 +503,7 @@ SageVDB/
 │   ├── query_engine.h        # Search coordinator
 │   ├── fusion_strategies.h   # Multimodal fusion
 │   ├── modality_processors.h # Modality handlers
-│   └── anns/                 # ANNS plugin system
+│   └── anns/                 # Native C++ ANNS plugin system
 │       └── anns_interface.h  # Plugin interface
 ├── src/                      # Implementation
 │   ├── sage_vdb.cpp
@@ -947,6 +950,8 @@ db = create_database(
     ef_construction=200,
 )
 ```
+
+This path uses a Python adapter backend, not the native C++ `ANNSRegistry` plugin layer. See `docs/sage_anns_integration.md` for the exact current boundary.
 
 See `../README.md` for Python API documentation.
 

@@ -71,13 +71,16 @@ def main():
     db2 = create_database(config, backend="sage-anns")
 
     # Add vectors incrementally
+    inserted_count = 0
     for i in range(10):
         vec = np.random.rand(dimension).astype(np.float32)
         vec_id = db2.add(vec, metadata={"batch": str(i)})
+        inserted_count += 1
         if i == 0:
             print(f"Added first vector with ID: {vec_id}")
 
-    print(f"Total vectors in db2: {db2.dimension}")
+    print(f"Inserted {inserted_count} vectors into db2")
+    print("Note: the sage-anns adapter exposes dimension/metric/algorithm, not a native size() API.")
 
     # Batch search
     print("\n--- Batch Search ---")

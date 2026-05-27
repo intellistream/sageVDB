@@ -67,6 +67,14 @@ if(DEFINED SKBUILD)
         # Wheel build: install to wheel platlib
         set(_install_dest "${SKBUILD_PLATLIB_DIR}/sagevdb")
     endif()
+
+    install(
+        DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../sagevdb/
+        DESTINATION ${_install_dest}
+        COMPONENT python
+        FILES_MATCHING
+        PATTERN "*.py"
+    )
     
     install(TARGETS _sagevdb
         LIBRARY DESTINATION ${_install_dest}
@@ -74,6 +82,14 @@ if(DEFINED SKBUILD)
     )
 else()
     # Standalone C++ project build
+    install(
+        DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../sagevdb/
+        DESTINATION python/sagevdb
+        COMPONENT python
+        FILES_MATCHING
+        PATTERN "*.py"
+    )
+
     install(TARGETS _sagevdb
         LIBRARY DESTINATION python
         COMPONENT python

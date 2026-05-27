@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Iterable, List, Optional, Sequence
+import json
+from pathlib import Path
+from typing import Any, Iterable, List, Mapping, Optional, Sequence
 
 import numpy as np
 
@@ -14,6 +16,9 @@ except ImportError as exc:  # pragma: no cover - import gating
     ) from exc
 
 from ._sagevdb import MetadataStore, QueryResult
+
+
+_ADAPTER_STATE_VERSION = 1
 
 
 def list_sage_anns_algorithms() -> List[str]:
@@ -41,12 +46,8 @@ class SageANNSVectorStore:
         self._dimension = int(dimension)
         self._algorithm = algorithm
         self._metric = metric
-        self._index = create_index(
-            algorithm=algorithm,
-            dimension=self._dimension,
-            metric=metric,
-            **index_params,
-        )
+        self._index_params = dict(index_params)
+        self._index = self._create_index_instance()
         self._metadata_store = MetadataStore()
         self._next_id = 0
 
@@ -84,7 +85,7 @@ class SageANNSVectorStore:
         self._next_id += 1
         self._index.add(data, ids=np.array([vector_id], dtype=np.int64))
         if metadata:
-            self._metadata_store.set_metadata(vector_id, metadata)
+            self._metadata_store.set_metadata(vector_id, _normalize_metadata(metadata))
         return vector_id
 
     def add_batch(
@@ -132,9 +133,44 @@ class SageANNSVectorStore:
 
     def save(self, path: str) -> None:
         self._index.save(path)
+        _save_adapter_state(
+            path,
+            {
+                "version": _ADAPTER_STATE_VERSION,
+                "dimension": self._dimension,
+                "metric": self._metric,
+                "algorithm": self._algorithm,
+                "next_id": self._next_id,
+                "metadata": _snapshot_metadata(self._metadata_store, self._next_id),
+            },
+        )
 
     def load(self, path: str) -> None:
-        self._index.load(path)
+        state = _load_adapter_state(path)
+        if state is not None:
+            _validate_adapter_state(state, self._dimension, self._metric, self._algorithm)
+
+        next_index = self._create_index_instance()
+        next_index.load(path)
+
+        next_metadata_store = MetadataStore()
+        if state is None:
+            next_id = _infer_next_id(next_index)
+        else:
+            next_id = int(state["next_id"])
+            _restore_metadata(next_metadata_store, state.get("metadata", {}))
+
+        self._index = next_index
+        self._metadata_store = next_metadata_store
+        self._next_id = next_id
+
+    def _create_index_instance(self) -> Any:
+        return create_index(
+            algorithm=self._algorithm,
+            dimension=self._dimension,
+            metric=self._metric,
+            **self._index_params,
+        )
 
 
 def _ensure_2d_float32(data: np.ndarray, dimension: int, name: str) -> np.ndarray:
@@ -160,7 +196,83 @@ def _set_metadata_batch(
     ids_list = list(ids)
     if len(ids_list) != len(metadata):
         raise ValueError("metadata size must match number of vectors")
-    store.set_batch_metadata(ids_list, list(metadata))
+    store.set_batch_metadata(ids_list, [_normalize_metadata(item) for item in metadata])
+
+
+def _normalize_metadata(metadata: Mapping[Any, Any]) -> dict[str, str]:
+    return {str(key): str(value) for key, value in metadata.items()}
+
+
+def _adapter_state_path(path: str) -> Path:
+    base = Path(path)
+    return base.with_name(f"{base.name}.sage_anns_adapter.json")
+
+
+def _snapshot_metadata(store: MetadataStore, next_id: int) -> dict[str, dict[str, Any]]:
+    metadata: dict[str, dict[str, Any]] = {}
+    for vector_id in range(max(0, int(next_id))):
+        item = store.get_metadata(vector_id)
+        if item:
+            metadata[str(vector_id)] = dict(item)
+    return metadata
+
+
+def _save_adapter_state(path: str, state: dict[str, Any]) -> None:
+    sidecar_path = _adapter_state_path(path)
+    sidecar_path.write_text(
+        json.dumps(state, ensure_ascii=False, sort_keys=True, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _load_adapter_state(path: str) -> dict[str, Any] | None:
+    sidecar_path = _adapter_state_path(path)
+    if not sidecar_path.exists():
+        return None
+    return json.loads(sidecar_path.read_text(encoding="utf-8"))
+
+
+def _validate_adapter_state(
+    state: dict[str, Any], dimension: int, metric: str, algorithm: str
+) -> None:
+    if int(state.get("version", -1)) != _ADAPTER_STATE_VERSION:
+        raise ValueError("Unsupported sage-anns adapter state version")
+    if int(state.get("dimension", -1)) != dimension:
+        raise ValueError("Adapter state dimension mismatch")
+    if state.get("metric") != metric:
+        raise ValueError("Adapter state metric mismatch")
+    if state.get("algorithm") != algorithm:
+        raise ValueError("Adapter state algorithm mismatch")
+
+    next_id = state.get("next_id")
+    if not isinstance(next_id, int) or next_id < 0:
+        raise ValueError("Adapter state next_id must be a non-negative integer")
+
+    metadata = state.get("metadata", {})
+    if not isinstance(metadata, dict):
+        raise ValueError("Adapter state metadata must be a dictionary")
+
+
+def _restore_metadata(store: MetadataStore, metadata: dict[str, Any]) -> None:
+    for raw_id, item in metadata.items():
+        vector_id = int(raw_id)
+        if item:
+            store.set_metadata(vector_id, _normalize_metadata(item))
+
+
+def _infer_next_id(index: Any) -> int:
+    candidates: list[int] = []
+
+    for attr_name in ("num_vectors", "_num_vectors", "ntotal"):
+        value = getattr(index, attr_name, None)
+        if isinstance(value, int) and value >= 0:
+            candidates.append(value)
+
+    data = getattr(index, "_data", None)
+    if isinstance(data, np.ndarray) and data.ndim >= 1:
+        candidates.append(int(data.shape[0]))
+
+    return max(candidates, default=0)
 
 
 def _to_query_results(
