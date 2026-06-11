@@ -751,8 +751,8 @@ class SageVDBService:
 #### Usage in SAGE Pipeline
 
 ```python
-from sage.kernel.api.local_environment import LocalEnvironment
-from sage.kernel.api.function.map_function import MapFunction
+from sage.runtime import LocalEnvironment
+from sage.foundation import MapFunction
 
 class VectorSearch(MapFunction):
     def execute(self, data):
