@@ -1,13 +1,8 @@
-"""SageVDB adapter for the sage.libs.vdb.VDBBackend interface.
+"""Legacy SageVDB backend bridge.
 
-Registers ``SageVDBBackend`` under the name ``"sagedb"`` so that L4 packages
-(e.g. ``isage-neuromem``) can obtain an instance via::
-
-    from sage.libs.vdb import create_backend
-    backend = create_backend("sagedb", {"dim": 768})
-
-This module is imported at the bottom of ``sagevdb/__init__.py`` so the
-registration happens automatically when ``import sagevdb`` is executed.
+Current SAGE main no longer ships ``sage.libs.vdb``. This module keeps the
+adapter importable for direct use and only performs legacy registry
+registration when that optional API is available.
 """
 
 from __future__ import annotations
@@ -15,7 +10,17 @@ from __future__ import annotations
 import numpy as np
 from typing import Any
 
-from sage.libs.vdb import VDBBackend, register_backend
+try:
+    from sage.libs.vdb import VDBBackend, register_backend
+except ImportError:
+    class VDBBackend:  # type: ignore[no-redef]
+        """Compatibility base when the removed sage.libs.vdb package is absent."""
+
+    def register_backend(_name: str):
+        def _decorator(cls):
+            return cls
+
+        return _decorator
 
 
 @register_backend("sagedb")
@@ -56,15 +61,15 @@ class SageVDBBackend(VDBBackend):
         index_type_str: str = str(config.get("index_type", "FLAT"))
         try:
             cfg.index_type = string_to_index_type(index_type_str)
-        except Exception:
-            pass  # leave as SageVDB default
+        except Exception as exc:
+            raise ValueError(f"Unsupported index_type: {index_type_str}") from exc
 
         # Optional metric override
         metric_str: str = str(config.get("metric", "L2"))
         try:
             cfg.metric = string_to_distance_metric(metric_str)
-        except Exception:
-            pass  # leave as SageVDB default
+        except Exception as exc:
+            raise ValueError(f"Unsupported metric: {metric_str}") from exc
 
         self._cfg = cfg
         self._db = SageVDB(cfg)

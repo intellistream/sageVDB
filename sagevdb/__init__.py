@@ -181,17 +181,19 @@ except ImportError as e:
     __all__ = []
 
 # ---------------------------------------------------------------------------
-# Optional: register SageVDBBackend into sage.libs.vdb so that L4 packages
-# (e.g. isage-neuromem) can obtain a backend via:
-#     from sage.libs.vdb import create_backend
-#     backend = create_backend("sagedb", config)
-# This is a soft dependency — if isage-libs is not installed, we silently
-# skip the registration (the adapter is simply unavailable).
+# Optional legacy bridge: current SAGE main no longer exposes ``sage.libs.vdb``.
+# ``SageVDBBackend`` remains importable for direct use, and legacy registry
+# registration is attempted only when that old package happens to be installed.
 # ---------------------------------------------------------------------------
 try:
-    from sagevdb._vdb_backend import SageVDBBackend  # noqa: F401 — side-effect registration
+    from sagevdb._vdb_backend import SageVDBBackend
 
     __all__.append("SageVDBBackend")
-except ImportError:
-    # isage-libs not installed — VDBBackend registration skipped
+except Exception as e:
+    import warnings
+
+    warnings.warn(
+        f"Failed to import legacy SageVDBBackend bridge: {e}",
+        ImportWarning,
+    )
     SageVDBBackend = None  # type: ignore[assignment]
