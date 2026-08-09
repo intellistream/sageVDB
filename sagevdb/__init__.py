@@ -17,9 +17,13 @@ except PackageNotFoundError:
 __author__ = "IntelliStream Team"
 __email__ = "shuhao_zhang@hust.edu.cn"
 
-# Help locate libsage_vdb.so for development mode
+import glob
 import os
+import platform
 import sys
+import sysconfig
+
+# Help locate libsage_vdb.so for development mode
 
 _pkg_dir = os.path.dirname(os.path.abspath(__file__))
 if os.path.exists(os.path.join(_pkg_dir, "libsage_vdb.so")):
@@ -169,16 +173,25 @@ try:
         raise ValueError("Invalid arguments for create_database")
 
 except ImportError as e:
-    import warnings
-
-    warnings.warn(
-        f"Failed to import SageVDB native extension: {e}\n"
-        "The package may not be properly installed. "
-        "Try reinstalling with: pip install --force-reinstall SageVDB",
-        ImportWarning,
-    )
-    # Provide empty stubs to prevent total failure
-    __all__ = []
+    _expected_ext = sysconfig.get_config_var("EXT_SUFFIX") or "<unknown>"
+    _available_exts = sorted(os.path.basename(path) for path in glob.glob(os.path.join(_pkg_dir, "_sagevdb*.so")))
+    _details = [
+        f"original error: {e}",
+        f"python: {sys.executable}",
+        f"python version: {platform.python_version()}",
+        f"expected extension suffix: {_expected_ext}",
+        f"package directory: {_pkg_dir}",
+        "available native extensions: " + (", ".join(_available_exts) if _available_exts else "<none>"),
+    ]
+    raise ImportError(
+        "Failed to import sageVDB native extension. The installed isage-vdb "
+        "package does not contain a native module compatible with this Python "
+        "ABI, or one of its shared-library dependencies is missing.\n"
+        + "\n".join(f"  - {line}" for line in _details)
+        + "\nReinstall or rebuild isage-vdb with the same Python interpreter. "
+        "For development checkouts, run scripts/link_shared_libs.sh with "
+        "PYTHON_BIN set to the target interpreter."
+    ) from e
 
 # ---------------------------------------------------------------------------
 # Optional legacy bridge: current SAGE main no longer exposes ``sage.libs.vdb``.
