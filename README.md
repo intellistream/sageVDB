@@ -926,6 +926,10 @@ public:
 
 ### Python Bindings
 
+Python wheels support CPython 3.8 through 3.13. Each wheel ships a native
+`_sagevdb` extension for the matching Python ABI; using a mismatched extension
+will fail fast with diagnostic details.
+
 Python bindings are provided in `../python/` using pybind11:
 
 ```python
