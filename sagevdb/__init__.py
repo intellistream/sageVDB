@@ -104,6 +104,26 @@ try:
         "SageVDBException",
     ]
 
+    from .persistence import (
+        OpenResult as OpenResult,
+        PersistenceError as PersistenceError,
+        PersistentRecord as PersistentRecord,
+        PersistentSageVDB as PersistentSageVDB,
+        SyncResult as SyncResult,
+        stable_content_hash as stable_content_hash,
+    )
+
+    __all__.extend(
+        [
+            "OpenResult",
+            "PersistenceError",
+            "PersistentRecord",
+            "PersistentSageVDB",
+            "SyncResult",
+            "stable_content_hash",
+        ]
+    )
+
     try:
         from .sage_anns import SageANNSVectorStore, list_sage_anns_algorithms
 
