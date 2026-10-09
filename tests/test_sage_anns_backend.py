@@ -300,3 +300,25 @@ def test_sage_anns_example_does_not_report_dimension_as_vector_count() -> None:
     source = example_path.read_text(encoding="utf-8")
 
     assert 'Total vectors in db2: {db2.dimension}' not in source
+
+
+def test_sage_vdb_backend_rejects_invalid_index_type(monkeypatch) -> None:
+    import sagevdb
+    from sagevdb._vdb_backend import SageVDBBackend
+
+    monkeypatch.setattr(sagevdb, "string_to_index_type", lambda value: (_ for _ in ()).throw(ValueError("bad index")))
+
+    with pytest.raises(ValueError, match="Unsupported index_type: BAD"):
+        SageVDBBackend({"dim": 8, "index_type": "BAD"})
+
+
+def test_sage_vdb_backend_rejects_invalid_metric(monkeypatch) -> None:
+    import sagevdb
+    from sagevdb._vdb_backend import SageVDBBackend
+
+    original_index_type = sagevdb.string_to_index_type
+    monkeypatch.setattr(sagevdb, "string_to_index_type", original_index_type)
+    monkeypatch.setattr(sagevdb, "string_to_distance_metric", lambda value: (_ for _ in ()).throw(ValueError("bad metric")))
+
+    with pytest.raises(ValueError, match="Unsupported metric: BAD"):
+        SageVDBBackend({"dim": 8, "index_type": "FLAT", "metric": "BAD"})

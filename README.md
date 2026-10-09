@@ -751,8 +751,8 @@ class SageVDBService:
 #### Usage in SAGE Pipeline
 
 ```python
-from sage.kernel.api.local_environment import LocalEnvironment
-from sage.kernel.api.function.map_function import MapFunction
+from sage.runtime import LocalEnvironment
+from sage.foundation import MapFunction
 
 class VectorSearch(MapFunction):
     def execute(self, data):
@@ -925,6 +925,10 @@ public:
 ## 🔗 Integration
 
 ### Python Bindings
+
+Python wheels support CPython 3.8 through 3.13. Each wheel ships a native
+`_sagevdb` extension for the matching Python ABI; using a mismatched extension
+will fail fast with diagnostic details.
 
 Python bindings are provided in `../python/` using pybind11:
 

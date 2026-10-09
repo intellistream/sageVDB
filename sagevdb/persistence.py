@@ -21,7 +21,7 @@ import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
+from typing import Any, Callable, Iterator, Mapping, Sequence
 
 MANIFEST_SCHEMA_VERSION = 1
 _MANIFEST_NAME = "manifest.json"

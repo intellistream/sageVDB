@@ -1,5 +1,6 @@
 """Regression checks for issue #27: VectorStore/ANNSRegistry boundary cleanup."""
 
+import importlib
 from pathlib import Path
 
 
@@ -31,3 +32,9 @@ def test_issue27_no_hidden_algorithm_fallback_in_initialize() -> None:
 
     assert 'algorithm_name_ = "brute_force";' not in content
     assert "is not registered" in content
+
+
+def test_issue27_legacy_vdb_bridge_remains_importable_without_sage_libs() -> None:
+    module = importlib.import_module("sagevdb._vdb_backend")
+
+    assert getattr(module, "SageVDBBackend", None) is not None
