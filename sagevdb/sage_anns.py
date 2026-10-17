@@ -50,6 +50,7 @@ class SageANNSVectorStore:
         self._index = self._create_index_instance()
         self._metadata_store = MetadataStore()
         self._next_id = 0
+        self._empty = True
 
     @property
     def dimension(self) -> int:
@@ -69,11 +70,23 @@ class SageANNSVectorStore:
         metadata: Optional[Sequence[dict]] = None,
     ) -> None:
         data = _ensure_2d_float32(vectors, self._dimension, "vectors")
-        self._index.build(data)
+        if len(data):
+            self._index.build(data)
+        else:
+            self._index = self._create_index_instance()
         self._metadata_store.clear()
         self._next_id = int(data.shape[0])
+        self._empty = self._next_id == 0
         if metadata:
             _set_metadata_batch(self._metadata_store, range(self._next_id), metadata)
+
+    def build_snapshot(self, vectors, metadata) -> List[int]:
+        """Whole-dataset builder for PersistentSageVDB's snapshot mode."""
+        data = np.asarray(vectors, dtype=np.float32)
+        if data.size == 0:
+            data = data.reshape(0, self._dimension)
+        self.build_index(data, metadata=metadata)
+        return list(range(self._next_id))
 
     def add(
         self,
@@ -84,6 +97,7 @@ class SageANNSVectorStore:
         vector_id = self._next_id
         self._next_id += 1
         self._index.add(data, ids=np.array([vector_id], dtype=np.int64))
+        self._empty = False
         if metadata:
             self._metadata_store.set_metadata(vector_id, _normalize_metadata(metadata))
         return vector_id
@@ -98,6 +112,8 @@ class SageANNSVectorStore:
         ids = np.arange(self._next_id, self._next_id + count, dtype=np.int64)
         self._next_id += count
         self._index.add(data, ids=ids)
+        if count:
+            self._empty = False
         if metadata:
             _set_metadata_batch(self._metadata_store, ids.tolist(), metadata)
         return ids.tolist()
@@ -110,6 +126,8 @@ class SageANNSVectorStore:
         **search_params,
     ) -> List[QueryResult]:
         queries = _ensure_2d_float32(query, self._dimension, "query")
+        if self._empty:
+            return []
         distances, indices = self._index.search(queries, k=k, **search_params)
         return _to_query_results(
             distances,
@@ -126,13 +144,16 @@ class SageANNSVectorStore:
         **search_params,
     ) -> List[List[QueryResult]]:
         batch = _ensure_2d_float32(queries, self._dimension, "queries")
+        if self._empty:
+            return [[] for _ in batch]
         distances, indices = self._index.search(batch, k=k, **search_params)
         return _to_query_results(
             distances, indices, self._metadata_store, include_metadata
         )
 
     def save(self, path: str) -> None:
-        self._index.save(path)
+        if not self._empty:
+            self._index.save(path)
         _save_adapter_state(
             path,
             {
@@ -141,6 +162,7 @@ class SageANNSVectorStore:
                 "metric": self._metric,
                 "algorithm": self._algorithm,
                 "next_id": self._next_id,
+                "empty": self._empty,
                 "metadata": _snapshot_metadata(self._metadata_store, self._next_id),
             },
         )
@@ -151,7 +173,9 @@ class SageANNSVectorStore:
             _validate_adapter_state(state, self._dimension, self._metric, self._algorithm)
 
         next_index = self._create_index_instance()
-        next_index.load(path)
+        empty = state is not None and state.get("empty", False)
+        if not empty:
+            next_index.load(path)
 
         next_metadata_store = MetadataStore()
         if state is None:
@@ -163,6 +187,7 @@ class SageANNSVectorStore:
         self._index = next_index
         self._metadata_store = next_metadata_store
         self._next_id = next_id
+        self._empty = empty
 
     def _create_index_instance(self) -> Any:
         return create_index(
@@ -247,6 +272,8 @@ def _validate_adapter_state(
     next_id = state.get("next_id")
     if not isinstance(next_id, int) or next_id < 0:
         raise ValueError("Adapter state next_id must be a non-negative integer")
+    if type(state.get("empty", False)) is not bool or (state.get("empty") and next_id != 0):
+        raise ValueError("Adapter empty state is inconsistent")
 
     metadata = state.get("metadata", {})
     if not isinstance(metadata, dict):

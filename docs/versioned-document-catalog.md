@@ -95,7 +95,27 @@ untrusted older backup, automatic reconstruction cannot establish freshness;
 operator-reviewed recovery remains necessary. The catalog is trusted application
 infrastructure, not a request parameter supplied by an end user.
 
-### Application cutover
+### Whole-index backends
+
+For Sage-ANNS, use the same `PersistentSageVDB` with `build_mode="snapshot"`.
+The adapter implements `build_snapshot(vectors, metadata)` and returns stable IDs
+within that committed generation. Updates/deletes/metadata changes build a fresh
+whole dataset before publication; the reported embedding count includes every
+re-embedded record. Equal-version replay and revision-only advancement do not
+re-embed. This mode uses the existing checksums, atomic CURRENT publication,
+source fences, read-only refresh and canonical reconstruction, not a second
+checkpoint implementation. Mode changes require a separate root; manifests
+without a mode are interpreted as the existing incremental format.
+
+Empty snapshots are explicit: the Sage-ANNS adapter persists an empty marker and
+metadata without requiring an algorithm to train or save an unbuilt empty index.
+Load/search distinguish this from a legacy index whose size cannot be inferred.
+The next nonempty snapshot builds normally. Real `faiss_hnsw` tests cover
+restart, search, deletion to empty and repopulation; other algorithms still
+require their own backend qualification. This is correctness support, not a
+claim of incremental update performance for whole-index algorithms.
+
+### Application cutover status
 
 This is the canonical commit primitive, **not a completed indexing pipeline**.
 Index workers must use the version fence, recover incomplete generations,

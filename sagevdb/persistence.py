@@ -83,7 +83,9 @@ class PersistentSageVDB:
     ``database_factory`` must return a fresh database exposing ``save``,
     ``load``, ``add``, ``remove``, ``set_metadata``, and ``build_index``.
     Keeping construction injectable lets the lifecycle work with native
-    SageVDB today and other SageVDB backends once they implement that contract.
+    SageVDB today. ``build_mode='snapshot'`` instead requires save/load and
+    build_snapshot(vectors, metadata), returning vector IDs. Both modes use the
+    same generation publication, fences, refresh and canonical recovery.
     """
 
     def __init__(
@@ -94,7 +96,11 @@ class PersistentSageVDB:
         compatibility: Mapping[str, Any],
         keep_generations: int = 2,
         source_namespace: str | None = None,
+        build_mode: str = "incremental",
     ) -> None:
+        if build_mode not in {"incremental", "snapshot"}:
+            raise ValueError("invalid_persistence_build_mode")
+        self._build_mode = build_mode
         if keep_generations < 2:
             raise ValueError("keep_generations must be at least 2")
         if source_namespace is not None and (
@@ -298,6 +304,9 @@ class PersistentSageVDB:
                 for key in existing_keys & desired_keys
                 if str(self._records[key].get("content_hash")) != desired[key].content_hash
             )
+            if self._build_mode == "snapshot":
+                return self._sync_snapshot(desired, vector_provider, source_revision,
+                                           added_keys, updated_keys, deleted_keys)
             embed_keys = added_keys + updated_keys
             to_embed = [PersistentRecord(desired[key].key, desired[key].content_hash,
                                          _canonical_json_value(dict(desired[key].metadata)))
@@ -377,6 +386,64 @@ class PersistentSageVDB:
                 committed=True,
             )
 
+    def _replacement_database(self, records, vectors):
+        database = self._database_factory()
+        metadata = []
+        for item in records:
+            value = {str(key): str(value) for key, value in item.metadata.items()}
+            value.update({_RESERVED_KEY: item.key, _RESERVED_HASH: item.content_hash})
+            metadata.append(value)
+        if self._build_mode == "snapshot":
+            ids = list(database.build_snapshot(vectors, metadata))
+            if (len(ids) != len(records) or any(type(i) is not int or i < 0 for i in ids)
+                    or len(set(ids)) != len(ids)):
+                raise ValueError("invalid_snapshot_vector_ids")
+        else:
+            ids = []
+            for vector, value in zip(vectors, metadata):
+                vector_id = int(database.add(list(vector)))
+                database.set_metadata(vector_id, value)
+                ids.append(vector_id)
+            database.build_index()
+        saved = {item.key: {"content_hash": item.content_hash, "vector_id": vector_id,
+                            "metadata": dict(item.metadata)}
+                 for item, vector_id in zip(records, ids)}
+        return database, saved
+
+    def _sync_snapshot(self, desired, vector_provider, revision, added, updated, deleted):
+        changed = bool(added or updated or deleted) or any(
+            dict(desired[key].metadata) != self._records[key]["metadata"]
+            for key in set(desired) & set(self._records))
+        if not changed and revision == self._source_revision and self._generation is not None:
+            return SyncResult(0, 0, 0, 0, self._generation, False)
+        records = [desired[key] for key in sorted(desired)]
+        embedded = 0
+        database, saved = self._database, self._records
+        if changed or self._generation is None:
+            inputs = [PersistentRecord(item.key, item.content_hash,
+                                       _canonical_json_value(dict(item.metadata))) for item in records]
+            vectors = list(vector_provider(inputs)) if inputs else []
+            if len(vectors) != len(records):
+                raise ValueError("snapshot_projection_vector_count_mismatch")
+            database, saved = self._replacement_database(records, vectors)
+            embedded = len(records)
+        previous = (self._database, self._records, self._source_revision,
+                    self._generation, self._loaded)
+        current = self._read_current()
+        self._database, self._records, self._source_revision = database, saved, revision
+        try:
+            generation = self._commit_generation()
+        except Exception:
+            committed = self._read_current()
+            if committed is not None and committed != current:
+                self._restore_generation(committed)
+                self._loaded = True
+            else:
+                (self._database, self._records, self._source_revision,
+                 self._generation, self._loaded) = previous
+            raise
+        return SyncResult(len(added), len(updated), len(deleted), embedded, generation, True)
+
     def rebuild_from_catalog(self, catalog, record_builder, vector_provider) -> SyncResult:
         """Reconstruct a versioned index from current canonical documents.
 
@@ -408,6 +475,8 @@ class PersistentSageVDB:
                     continue
                 if manifest.get("source_namespace") != self._source_namespace:
                     raise PersistenceError("source_namespace_conflict")
+                if manifest.get("build_mode", "incremental") != self._build_mode:
+                    raise PersistenceError("incompatible persistence build mode")
                 known = manifest.get("source_revision")
                 if type(known) is int and known > revision:
                     raise PersistenceError("canonical_catalog_older_than_index")
@@ -441,16 +510,7 @@ class PersistentSageVDB:
             vectors = list(vector_provider(inputs)) if inputs else []
             if len(vectors) != len(records):
                 raise ValueError("canonical_projection_vector_count_mismatch")
-            database = self._database_factory()
-            saved = {}
-            for item, vector in zip(records, vectors):
-                vector_id = int(database.add(list(vector)))
-                metadata = {str(key): str(value) for key, value in item.metadata.items()}
-                metadata.update({_RESERVED_KEY: item.key, _RESERVED_HASH: item.content_hash})
-                database.set_metadata(vector_id, metadata)
-                saved[item.key] = {"content_hash": item.content_hash, "vector_id": vector_id,
-                                   "metadata": dict(item.metadata)}
-            database.build_index()
+            database, saved = self._replacement_database(records, vectors)
             if catalog.snapshot()["revision"] != revision:
                 raise PersistenceError("canonical_catalog_changed_during_rebuild")
             previous = (self._database, self._records, self._source_revision,
@@ -487,6 +547,7 @@ class PersistentSageVDB:
                 "files": files,
                 "source_namespace": self._source_namespace,
                 "source_revision": self._source_revision,
+                "build_mode": self._build_mode,
             }
             manifest_path = staging / _MANIFEST_NAME
             _write_json_fsynced(manifest_path, manifest)
@@ -548,6 +609,8 @@ class PersistentSageVDB:
             raise PersistenceError("invalid_source_revision")
         if _canonical_json_value(manifest.get("compatibility")) != self._compatibility:
             raise PersistenceError("incompatible index fingerprint")
+        if manifest.get("build_mode", "incremental") != self._build_mode:
+            raise PersistenceError("incompatible persistence build mode")
         files = manifest.get("files")
         if not isinstance(files, dict) or not files:
             raise PersistenceError("manifest contains no database files")
