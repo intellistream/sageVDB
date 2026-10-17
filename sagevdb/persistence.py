@@ -660,7 +660,13 @@ class PersistentSageVDB:
         path = self.root / _CURRENT_NAME
         if not path.is_file():
             return None
-        value = path.read_text(encoding="utf-8").strip()
+        try:
+            value = path.read_text(encoding="utf-8").strip()
+        except UnicodeDecodeError:
+            # An unreadable pointer has no usable generation identity. The
+            # versioned open path still requires canonical reconstruction;
+            # never fall back to an older generation and lower its fence.
+            return None
         return value or None
 
     def _replace_current(self, generation: str) -> None:

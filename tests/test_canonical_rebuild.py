@@ -21,7 +21,7 @@ def embed(records):
     return [[1.0, 2.0] for _ in records]
 
 
-@pytest.mark.parametrize("damage", ["vectors", "pointer", "manifest"])
+@pytest.mark.parametrize("damage", ["vectors", "pointer", "manifest", "pointer_encoding"])
 def test_rebuild_uses_current_canonical_documents_and_tombstones(tmp_path, damage):
     catalog, index = setup(tmp_path)
     catalog.commit("one", {"a": {"text": "old"}}, expected_revision=0)
@@ -29,6 +29,8 @@ def test_rebuild_uses_current_canonical_documents_and_tombstones(tmp_path, damag
     generation = index.generation
     if damage == "pointer":
         (tmp_path / "CURRENT").unlink()
+    elif damage == "pointer_encoding":
+        (tmp_path / "CURRENT").write_bytes(b"\xffinvalid")
     else:
         filename = "index.vectors" if damage == "vectors" else "manifest.json"
         (tmp_path / f"generation-{generation}" / filename).write_text("corrupt")
