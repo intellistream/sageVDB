@@ -35,6 +35,10 @@ class VersionedDocumentCatalog:
         self.state = state
         self.slot = ("sagevdb-documents-v1", namespace, "catalog")
 
+    @property
+    def namespace(self) -> str:
+        return self.slot[1]
+
     @staticmethod
     def _collection(value):
         if value is None:

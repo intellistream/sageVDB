@@ -62,11 +62,38 @@ canonical changes. Reads must still apply canonical deletion/authorization check
 
 Versioned roots fail closed when CURRENT is missing/corrupt or its generation is
 invalid: loading an older generation would also lose the high-water mark and let
-an old task resurrect deleted data. Explicit rebuilding from trusted canonical
-state and atomic replacement of such a root is still an integration gate; do not
-retry as unversioned or serve an older generation as current. Unversioned users
+an old task resurrect deleted data. Use `rebuild_from_catalog` with the trusted
+current catalog; do not retry as unversioned or serve an older generation as current. Unversioned users
 retain their existing last-known-good recovery semantics. There is no automatic
 in-place conversion of an existing unversioned root to a versioned namespace.
+
+### Canonical reconstruction
+
+`index.rebuild_from_catalog(catalog, record_builder, vector_provider)` reads the
+catalog itself under the index writer lock. It does not accept a task's saved
+snapshot or revision. `record_builder(key, document)` returns a `PersistentRecord`
+with that exact key and the hash/metadata derived from its complete document;
+tombstones are excluded. Callbacks must be deterministic and must not re-enter
+the index writer. This operation builds a fresh private database, then publishes
+one generation through the existing atomic CURRENT mechanism. It is a full
+rebuild; ordinary incremental work should use `sync`.
+
+A readable retained generation with a higher revision blocks reconstruction from
+an older catalog. A different namespace, an empty catalog history over an existing
+index, or redefining a healthy equal revision also fails. If the canonical revision
+changes during embedding/building, the candidate is not published; retry against
+the current catalog. Changes committed just after the final check are normal
+index lag and require their own durable indexing intent. There is no atomic
+transaction across canonical storage and the index filesystem.
+
+Embedding/build/save failure leaves CURRENT unchanged. A failure after CURRENT
+publication restores the newly committed index in memory, not the old version.
+Process-exit tests exercise both sides of publication with a durable SQLite
+catalog, and native-index tests verify search after corruption and reconstruction.
+If both the index history and the canonical catalog are lost or restored to an
+untrusted older backup, automatic reconstruction cannot establish freshness;
+operator-reviewed recovery remains necessary. The catalog is trusted application
+infrastructure, not a request parameter supplied by an end user.
 
 ### Application cutover
 

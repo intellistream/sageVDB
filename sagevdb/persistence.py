@@ -345,6 +345,98 @@ class PersistentSageVDB:
                 committed=True,
             )
 
+    def rebuild_from_catalog(self, catalog, record_builder, vector_provider) -> SyncResult:
+        """Reconstruct a versioned index from current canonical documents.
+
+        No caller-supplied snapshot/revision is accepted. The catalog is trusted
+        application infrastructure, not user input. Failed builds never publish
+        a partially populated database. Old generations remain recovery evidence.
+        """
+        from .document_catalog import VersionedDocumentCatalog
+
+        if not isinstance(catalog, VersionedDocumentCatalog):
+            raise TypeError("rebuild_requires_versioned_document_catalog")
+        if self._source_namespace is None or catalog.namespace != self._source_namespace:
+            raise PersistenceError("source_namespace_conflict")
+        with self._thread_lock, self._file_lock(exclusive=True):
+            snapshot = catalog.snapshot()
+            revision = snapshot["revision"]
+            current = self._read_current()
+            candidates = self._candidate_generations()
+            if candidates and revision == 0:
+                raise PersistenceError("existing_index_requires_nonempty_catalog_history")
+            # Even a damaged database can retain a readable manifest/fence.
+            # Check every retained generation, including orphaned publication.
+            for generation in candidates:
+                try:
+                    manifest = json.loads((self._generation_dir(generation) / _MANIFEST_NAME).read_text())
+                except (OSError, ValueError):
+                    continue
+                if not isinstance(manifest, dict):
+                    continue
+                if manifest.get("source_namespace") != self._source_namespace:
+                    raise PersistenceError("source_namespace_conflict")
+                known = manifest.get("source_revision")
+                if type(known) is int and known > revision:
+                    raise PersistenceError("canonical_catalog_older_than_index")
+
+            records = []
+            for key, entry in sorted(snapshot["records"].items()):
+                if entry["document"] is None:
+                    continue
+                item = record_builder(key, entry["document"])
+                if not isinstance(item, PersistentRecord) or item.key != key or not item.content_hash:
+                    raise ValueError("invalid_canonical_projection_record")
+                records.append(PersistentRecord(key, item.content_hash,
+                                                _canonical_json_value(dict(item.metadata))))
+
+            # Rebuilding a healthy equal revision cannot redefine its identity.
+            if current is not None:
+                try:
+                    valid = self._validate_generation(current)
+                except (OSError, ValueError, TypeError, PersistenceError):
+                    valid = None
+                if valid is not None and valid.get("source_revision") == revision:
+                    old = {key: {"content_hash": value["content_hash"], "metadata": value["metadata"]}
+                           for key, value in valid["records"].items()}
+                    new = {item.key: {"content_hash": item.content_hash, "metadata": dict(item.metadata)}
+                           for item in records}
+                    if old != new:
+                        raise PersistenceError("source_revision_identity_conflict")
+
+            inputs = [PersistentRecord(item.key, item.content_hash,
+                                       _canonical_json_value(dict(item.metadata))) for item in records]
+            vectors = list(vector_provider(inputs)) if inputs else []
+            if len(vectors) != len(records):
+                raise ValueError("canonical_projection_vector_count_mismatch")
+            database = self._database_factory()
+            saved = {}
+            for item, vector in zip(records, vectors):
+                vector_id = int(database.add(list(vector)))
+                metadata = {str(key): str(value) for key, value in item.metadata.items()}
+                metadata.update({_RESERVED_KEY: item.key, _RESERVED_HASH: item.content_hash})
+                database.set_metadata(vector_id, metadata)
+                saved[item.key] = {"content_hash": item.content_hash, "vector_id": vector_id,
+                                   "metadata": dict(item.metadata)}
+            database.build_index()
+            if catalog.snapshot()["revision"] != revision:
+                raise PersistenceError("canonical_catalog_changed_during_rebuild")
+            previous = (self._database, self._records, self._source_revision,
+                        self._generation, self._loaded)
+            self._database, self._records, self._source_revision = database, saved, revision
+            try:
+                generation = self._commit_generation()
+            except Exception:
+                committed = self._read_current()
+                if committed is not None and committed != current:
+                    self._restore_generation(committed)
+                    self._loaded = True
+                else:
+                    (self._database, self._records, self._source_revision,
+                     self._generation, self._loaded) = previous
+                raise
+            return SyncResult(len(records), 0, 0, len(records), generation, True)
+
     def _commit_generation(self) -> str:
         self.root.mkdir(parents=True, exist_ok=True)
         generation = f"{time.time_ns():020d}-{uuid.uuid4().hex}"
