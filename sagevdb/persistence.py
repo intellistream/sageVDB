@@ -64,6 +64,7 @@ class SyncResult:
     embedded: int
     generation: str | None
     committed: bool
+    projected: int = 0
 
 
 def stable_content_hash(*parts: str) -> str:
@@ -86,6 +87,10 @@ class PersistentSageVDB:
     SageVDB today. ``build_mode='snapshot'`` instead requires save/load and
     build_snapshot(vectors, metadata), returning vector IDs. Both modes use the
     same generation publication, fences, refresh and canonical recovery.
+    ``build_mode='records'`` supports non-vector indexes through
+    ``build_records(payloads, metadata)`` returning stable integer record IDs.
+    Its provider returns JSON records, not synthetic vectors; ``projected``
+    counts rebuilt records while ``embedded`` stays zero.
     """
 
     def __init__(
@@ -98,7 +103,7 @@ class PersistentSageVDB:
         source_namespace: str | None = None,
         build_mode: str = "incremental",
     ) -> None:
-        if build_mode not in {"incremental", "snapshot"}:
+        if build_mode not in {"incremental", "snapshot", "records"}:
             raise ValueError("invalid_persistence_build_mode")
         self._build_mode = build_mode
         if keep_generations < 2:
@@ -225,15 +230,16 @@ class PersistentSageVDB:
     def sync(
         self,
         records: Sequence[PersistentRecord],
-        vector_provider: Callable[[Sequence[PersistentRecord]], Sequence[Sequence[float]]],
+        vector_provider: Callable[[Sequence[PersistentRecord]], Sequence[Any]],
         *,
         source_revision: int | None = None,
     ) -> SyncResult:
         """Synchronize logical records and atomically commit a new generation.
 
-        The provider is invoked once, before mutation, and only for added or
-        changed records.  If embedding fails, the in-memory and durable indexes
-        remain on the previous generation.
+        Incremental mode requests only changed vectors. Snapshot/records modes
+        request the complete desired dataset when content or metadata changes.
+        In records mode the historically named provider returns JSON mappings,
+        not vectors. Provider/build failure leaves the prior generation intact.
         """
 
         if self._source_namespace is None:
@@ -304,7 +310,7 @@ class PersistentSageVDB:
                 for key in existing_keys & desired_keys
                 if str(self._records[key].get("content_hash")) != desired[key].content_hash
             )
-            if self._build_mode == "snapshot":
+            if self._build_mode in {"snapshot", "records"}:
                 return self._sync_snapshot(desired, vector_provider, source_revision,
                                            added_keys, updated_keys, deleted_keys)
             embed_keys = added_keys + updated_keys
@@ -393,8 +399,14 @@ class PersistentSageVDB:
             value = {str(key): str(value) for key, value in item.metadata.items()}
             value.update({_RESERVED_KEY: item.key, _RESERVED_HASH: item.content_hash})
             metadata.append(value)
-        if self._build_mode == "snapshot":
-            ids = list(database.build_snapshot(vectors, metadata))
+        if self._build_mode in {"snapshot", "records"}:
+            if self._build_mode == "records":
+                payloads = _canonical_json_value(vectors)
+                if any(not isinstance(payload, dict) for payload in payloads):
+                    raise ValueError("projection_payloads_must_be_records")
+                ids = list(database.build_records(payloads, metadata))
+            else:
+                ids = list(database.build_snapshot(vectors, metadata))
             if (len(ids) != len(records) or any(type(i) is not int or i < 0 for i in ids)
                     or len(set(ids)) != len(ids)):
                 raise ValueError("invalid_snapshot_vector_ids")
@@ -426,7 +438,7 @@ class PersistentSageVDB:
             if len(vectors) != len(records):
                 raise ValueError("snapshot_projection_vector_count_mismatch")
             database, saved = self._replacement_database(records, vectors)
-            embedded = len(records)
+            embedded = len(records) if self._build_mode != "records" else 0
         previous = (self._database, self._records, self._source_revision,
                     self._generation, self._loaded)
         current = self._read_current()
@@ -442,7 +454,10 @@ class PersistentSageVDB:
                 (self._database, self._records, self._source_revision,
                  self._generation, self._loaded) = previous
             raise
-        return SyncResult(len(added), len(updated), len(deleted), embedded, generation, True)
+        projected = len(records) if self._build_mode == "records" and (
+            changed or previous[3] is None) else 0
+        return SyncResult(len(added), len(updated), len(deleted), embedded, generation, True,
+                          projected=projected)
 
     def rebuild_from_catalog(self, catalog, record_builder, vector_provider) -> SyncResult:
         """Reconstruct a versioned index from current canonical documents.
@@ -527,7 +542,10 @@ class PersistentSageVDB:
                     (self._database, self._records, self._source_revision,
                      self._generation, self._loaded) = previous
                 raise
-            return SyncResult(len(records), 0, 0, len(records), generation, True)
+            return SyncResult(len(records), 0, 0,
+                              len(records) if self._build_mode != "records" else 0,
+                              generation, True,
+                              projected=len(records) if self._build_mode == "records" else 0)
 
     def _commit_generation(self) -> str:
         self.root.mkdir(parents=True, exist_ok=True)

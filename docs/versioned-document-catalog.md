@@ -115,6 +115,23 @@ restart, search, deletion to empty and repopulation; other algorithms still
 require their own backend qualification. This is correctness support, not a
 claim of incremental update performance for whole-index algorithms.
 
+### Non-vector record projections
+
+`PersistentSageVDB(..., build_mode="records")` uses the same generation lifecycle
+for a backend exposing `build_records(payloads, metadata)`, `save` and `load`.
+The provider passed to `sync` (historically named `vector_provider`) returns one
+JSON mapping per requested record, not dummy vectors. Payloads are detached
+before building. The builder returns unique nonnegative integer IDs within the
+generation; the existing ID map links those IDs to canonical keys.
+
+Record rebuilds report `SyncResult.projected`; `embedded` is zero in this mode.
+Unchanged content at a newer revision advances the fence without rebuilding.
+Snapshot and record modes have distinct manifest identities and must not share
+a root. Save/load must serialize the entire derived view into ordinary files
+at the provided basename; nested backend artifacts need a component-owned
+serialization adapter. This contract does not itself supply a NeuroMem adapter
+or establish its caller/production acceptance.
+
 ### Application cutover status
 
 This is the canonical commit primitive, **not a completed indexing pipeline**.
