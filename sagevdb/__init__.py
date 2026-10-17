@@ -112,6 +112,7 @@ try:
         SyncResult as SyncResult,
         stable_content_hash as stable_content_hash,
     )
+    from .document_catalog import DocumentConflict, VersionedDocumentCatalog
 
     __all__.extend(
         [
@@ -121,6 +122,8 @@ try:
             "PersistentSageVDB",
             "SyncResult",
             "stable_content_hash",
+            "DocumentConflict",
+            "VersionedDocumentCatalog",
         ]
     )
 
