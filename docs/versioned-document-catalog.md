@@ -44,8 +44,34 @@ claimed. Crash tests cover process exit, not power-loss guarantees.
 
 ## Remaining integration gates
 
+### Version-fenced index generations
+
+Create `PersistentSageVDB(..., source_namespace="knowledge")` on a fresh index
+root and supply `source_revision=snapshot["revision"]` to `sync`. The namespace
+is fixed for that root, and the revision is saved in the same generation manifest
+as the records/index. Each writer rechecks CURRENT under the inter-process lock.
+Older revisions fail before embedding; an equal revision is an idempotent no-op
+only when all keys, content hashes and metadata match exactly. A higher revision
+is persisted even if vectors are unchanged. `source_revision` reports the loaded
+revision, including after restart or a lost post-commit acknowledgement.
+
+Do not derive this revision from task arrival time. Use the canonical catalog
+snapshot revision and ensure all records belong to that same snapshot. This fence
+prevents index rollback, but it does not prove the index has caught up with newer
+canonical changes. Reads must still apply canonical deletion/authorization checks.
+
+Versioned roots fail closed when CURRENT is missing/corrupt or its generation is
+invalid: loading an older generation would also lose the high-water mark and let
+an old task resurrect deleted data. Explicit rebuilding from trusted canonical
+state and atomic replacement of such a root is still an integration gate; do not
+retry as unversioned or serve an older generation as current. Unversioned users
+retain their existing last-known-good recovery semantics. There is no automatic
+in-place conversion of an existing unversioned root to a versioned namespace.
+
+### Application cutover
+
 This is the canonical commit primitive, **not a completed indexing pipeline**.
-Index workers must reject stale projections, recover incomplete generations,
+Index workers must use the version fence, recover incomplete generations,
 and acknowledge only after publishing a valid index. Consumers must not let
 stale index metadata bypass current canonical authorization or tombstones.
 Catalog snapshots and receipt retention are currently unbounded; capacity,

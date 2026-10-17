@@ -93,9 +93,17 @@ class PersistentSageVDB:
         *,
         compatibility: Mapping[str, Any],
         keep_generations: int = 2,
+        source_namespace: str | None = None,
     ) -> None:
         if keep_generations < 2:
             raise ValueError("keep_generations must be at least 2")
+        if source_namespace is not None and (
+            not isinstance(source_namespace, str) or not source_namespace.strip()
+            or source_namespace != source_namespace.strip()
+        ):
+            raise ValueError("source_namespace_must_be_nonempty_and_trimmed")
+        self._source_namespace = source_namespace
+        self._source_revision: int | None = None
         self.root = Path(root)
         self._database_factory = database_factory
         self._compatibility = _canonical_json_value(dict(compatibility))
@@ -115,6 +123,10 @@ class PersistentSageVDB:
         return self._generation
 
     @property
+    def source_revision(self) -> int | None:
+        return self._source_revision
+
+    @property
     def vector_ids(self) -> dict[str, int]:
         return {key: int(value["vector_id"]) for key, value in self._records.items()}
 
@@ -124,6 +136,18 @@ class PersistentSageVDB:
         with self._thread_lock, self._file_lock(exclusive=False):
             candidates = self._candidate_generations()
             current = self._read_current()
+            if current is not None:
+                self._check_source_namespace(current)
+            if self._source_namespace is None:
+                # A damaged pointer/manifest must not make a versioned root
+                # look like a fresh unversioned index.
+                for candidate in candidates:
+                    self._check_source_namespace(candidate)
+            if self._source_namespace is not None:
+                if current is None and candidates:
+                    raise PersistenceError("versioned_current_missing_requires_canonical_rebuild")
+                # Recovering an older index would also roll back its fence.
+                candidates = [current] if current is not None else []
             errors: list[str] = []
             for generation in candidates:
                 try:
@@ -136,6 +160,7 @@ class PersistentSageVDB:
                         for key, value in dict(manifest.get("records", {})).items()
                     }
                     self._generation = generation
+                    self._source_revision = manifest.get("source_revision")
                     self._loaded = True
                     recovered = current is not None and generation != current
                     return OpenResult(
@@ -145,11 +170,14 @@ class PersistentSageVDB:
                         reason="recovered_last_known_good" if recovered else "loaded_current",
                     )
                 except (OSError, ValueError, TypeError, RuntimeError, PersistenceError) as exc:
+                    if self._source_namespace is not None:
+                        raise PersistenceError("versioned_current_invalid_requires_canonical_rebuild") from exc
                     errors.append(f"{generation}: {exc}")
 
             self._database = self._database_factory()
             self._records = {}
             self._generation = None
+            self._source_revision = None
             self._loaded = True
             reason = "no_generation" if not candidates else "no_compatible_valid_generation"
             if errors:
@@ -160,6 +188,8 @@ class PersistentSageVDB:
         self,
         records: Sequence[PersistentRecord],
         vector_provider: Callable[[Sequence[PersistentRecord]], Sequence[Sequence[float]]],
+        *,
+        source_revision: int | None = None,
     ) -> SyncResult:
         """Synchronize logical records and atomically commit a new generation.
 
@@ -168,17 +198,30 @@ class PersistentSageVDB:
         remain on the previous generation.
         """
 
+        if self._source_namespace is None:
+            if source_revision is not None:
+                raise ValueError("source_revision_requires_namespace")
+        elif type(source_revision) is not int or source_revision < 0:
+            raise ValueError("source_revision_must_be_nonnegative_integer")
+
         with self._thread_lock:
             if not self._loaded:
                 self.open()
 
         with self._thread_lock, self._file_lock(exclusive=True):
             current = self._read_current()
+            if self._source_namespace is not None and current is None and self._generation is not None:
+                raise PersistenceError("versioned_current_missing_requires_canonical_rebuild")
+            if self._source_namespace is not None and current is not None and current == self._generation:
+                # An idempotent acknowledgement still promises a valid durable
+                # generation, not merely the surviving process-local index.
+                self._validate_generation(current)
             if current is not None and current != self._generation:
+                self._check_source_namespace(current)
                 try:
                     manifest = self._validate_generation(current)
                 except PersistenceError:
-                    if self._generation is not None:
+                    if self._generation is not None or self._source_namespace is not None:
                         raise
                 else:
                     database = self._database_factory()
@@ -189,6 +232,7 @@ class PersistentSageVDB:
                         for key, value in dict(manifest.get("records", {})).items()
                     }
                     self._generation = current
+                    self._source_revision = manifest.get("source_revision")
 
             desired: dict[str, PersistentRecord] = {}
             for record in records:
@@ -198,7 +242,20 @@ class PersistentSageVDB:
                     raise ValueError(f"content_hash must not be empty for {record.key!r}")
                 if record.key in desired:
                     raise ValueError(f"duplicate record key: {record.key!r}")
-                desired[record.key] = record
+                desired[record.key] = PersistentRecord(
+                    record.key, record.content_hash, _canonical_json_value(dict(record.metadata)))
+
+            if self._source_revision is not None:
+                if source_revision < self._source_revision:
+                    raise PersistenceError("stale_source_revision")
+                if source_revision == self._source_revision:
+                    previous = {key: {"content_hash": value["content_hash"], "metadata": value["metadata"]}
+                                for key, value in self._records.items()}
+                    incoming = {key: {"content_hash": value.content_hash, "metadata": dict(value.metadata)}
+                                for key, value in desired.items()}
+                    if previous != incoming:
+                        raise PersistenceError("source_revision_identity_conflict")
+                    return SyncResult(0, 0, 0, 0, self._generation, False)
 
             existing_keys = set(self._records)
             desired_keys = set(desired)
@@ -210,7 +267,9 @@ class PersistentSageVDB:
                 if str(self._records[key].get("content_hash")) != desired[key].content_hash
             )
             embed_keys = added_keys + updated_keys
-            to_embed = [desired[key] for key in embed_keys]
+            to_embed = [PersistentRecord(desired[key].key, desired[key].content_hash,
+                                         _canonical_json_value(dict(desired[key].metadata)))
+                        for key in embed_keys]
             vectors = list(vector_provider(to_embed)) if to_embed else []
             if len(vectors) != len(to_embed):
                 raise ValueError(
@@ -222,7 +281,8 @@ class PersistentSageVDB:
                 != _canonical_json_value(dict(self._records[key].get("metadata", {})))
                 for key in (existing_keys & desired_keys) - set(updated_keys)
             )
-            needs_commit = bool(embed_keys or deleted_keys or metadata_only_changed)
+            needs_commit = bool(embed_keys or deleted_keys or metadata_only_changed
+                                or source_revision != self._source_revision)
             if not needs_commit and self._generation is not None:
                 return SyncResult(0, 0, 0, 0, self._generation, False)
 
@@ -267,9 +327,13 @@ class PersistentSageVDB:
                     self._records[key]["metadata"] = new_metadata
 
                 self._database.build_index()
+                self._source_revision = source_revision
                 generation = self._commit_generation()
             except Exception:
-                self._restore_generation(previous_generation)
+                # CURRENT may already be durable when an acknowledgement or
+                # post-commit cleanup fails. Never roll the live fence back.
+                restore = self._read_current() if self._source_namespace is not None else previous_generation
+                self._restore_generation(restore)
                 raise
 
             return SyncResult(
@@ -297,6 +361,8 @@ class PersistentSageVDB:
                 "compatibility": self._compatibility,
                 "records": self._records,
                 "files": files,
+                "source_namespace": self._source_namespace,
+                "source_revision": self._source_revision,
             }
             manifest_path = staging / _MANIFEST_NAME
             _write_json_fsynced(manifest_path, manifest)
@@ -316,6 +382,7 @@ class PersistentSageVDB:
         self._database = self._database_factory()
         self._records = {}
         self._generation = None
+        self._source_revision = None
         if generation is None:
             return
         manifest = self._validate_generation(generation)
@@ -324,6 +391,20 @@ class PersistentSageVDB:
             str(key): dict(value) for key, value in dict(manifest.get("records", {})).items()
         }
         self._generation = generation
+        self._source_revision = manifest.get("source_revision")
+
+    def _check_source_namespace(self, generation: str) -> None:
+        if not generation or Path(generation).name != generation:
+            raise PersistenceError("invalid generation name")
+        path = self._generation_dir(generation) / _MANIFEST_NAME
+        try:
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            if self._source_namespace is not None:
+                raise PersistenceError("versioned_current_invalid_requires_canonical_rebuild")
+            return  # Preserve legacy last-known-good recovery.
+        if manifest.get("source_namespace") != self._source_namespace:
+            raise PersistenceError("source_namespace_conflict")
 
     def _validate_generation(self, generation: str) -> dict[str, Any]:
         if not generation or Path(generation).name != generation:
@@ -335,6 +416,12 @@ class PersistentSageVDB:
             raise PersistenceError("unsupported manifest schema")
         if manifest.get("generation") != generation:
             raise PersistenceError("generation name does not match manifest")
+        if manifest.get("source_namespace") != self._source_namespace:
+            raise PersistenceError("source_namespace_conflict")
+        if self._source_namespace is not None and (
+            type(manifest.get("source_revision")) is not int or manifest["source_revision"] < 0
+        ):
+            raise PersistenceError("invalid_source_revision")
         if _canonical_json_value(manifest.get("compatibility")) != self._compatibility:
             raise PersistenceError("incompatible index fingerprint")
         files = manifest.get("files")
