@@ -184,6 +184,38 @@ class PersistentSageVDB:
                 reason = f"{reason}: {'; '.join(errors)}"
             return OpenResult(False, False, None, reason)
 
+    def refresh(self, *, minimum_source_revision: int) -> OpenResult:
+        """Load a committed versioned projection without rebuilding or writing.
+
+        A task receipt is not a process-local cache barrier. Readers use this
+        after a worker commits, requiring their canonical revision (or newer).
+        Missing/behind/corrupt generations fail without replacing a previously
+        loaded handle. Unlike open(), this never creates an empty database or
+        falls back to an older generation. No embedding callback is involved.
+        """
+        if self._source_namespace is None:
+            raise ValueError("refresh_requires_source_namespace")
+        if type(minimum_source_revision) is not int or minimum_source_revision < 0:
+            raise ValueError("minimum_source_revision_must_be_nonnegative_integer")
+        with self._thread_lock, self._file_lock(exclusive=False):
+            generation = self._read_current()
+            if generation is None:
+                raise PersistenceError("source_revision_not_ready")
+            self._check_source_namespace(generation)
+            manifest = self._validate_generation(generation)
+            revision = manifest["source_revision"]
+            if self._source_revision is not None and revision < self._source_revision:
+                raise PersistenceError("source_revision_regression")
+            if revision < minimum_source_revision:
+                raise PersistenceError("source_revision_not_ready")
+            database = self._database_factory()
+            database.load(str(self._generation_dir(generation) / _DATABASE_BASENAME))
+            records = {str(key): dict(value) for key, value in manifest["records"].items()}
+            self._database, self._records = database, records
+            self._generation, self._source_revision = generation, revision
+            self._loaded = True
+            return OpenResult(True, False, generation, "refreshed_current")
+
     def sync(
         self,
         records: Sequence[PersistentRecord],
